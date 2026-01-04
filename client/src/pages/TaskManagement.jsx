@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListTodo, Plus, Edit2, Trash2, X } from 'lucide-react';
 import { taskAPI } from '../api/api';
+import TaskDialog from '../components/TaskDialog';
 
 function TaskManagement() {
   const [tasks, setTasks] = useState([]);
