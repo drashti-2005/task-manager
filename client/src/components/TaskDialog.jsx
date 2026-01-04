@@ -1,5 +1,4 @@
 import React from 'react';
-import CustomSelect from './CustomSelect';
 
 function TaskDialog({ 
   showModal, 
@@ -82,32 +81,34 @@ function TaskDialog({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Status
               </label>
-              <CustomSelect
+              <select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                options={[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'in-progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' }
-                ]}
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                style={{ backgroundColor: 'white', color: 'black' }}
+              >
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Priority
               </label>
-              <CustomSelect
+              <select
                 name="priority"
                 value={formData.priority}
                 onChange={handleInputChange}
-                options={[
-                  { value: 'low', label: 'Low' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'high', label: 'High' }
-                ]}
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                style={{ backgroundColor: 'white', color: 'black' }}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
             </div>
           </div>
           
