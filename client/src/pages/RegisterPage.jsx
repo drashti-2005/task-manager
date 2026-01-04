@@ -209,7 +209,7 @@ function RegisterPage() {
                     type="text"
                     required
                     autoComplete="name"
-                    className="block w-full pl-12 pr-4 py-4 border-2 border-yellow-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition duration-300"
+                    className="block w-full pl-12 pr-4 py-4 border-2 border-yellow-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-300 placeholder:text-sm placeholder:font-semibold placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition duration-300"
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={handleChange}
@@ -240,7 +240,7 @@ function RegisterPage() {
                     type="email"
                     required
                     autoComplete="email"
-                    className="block w-full pl-12 pr-4 py-4 border-2 border-pink-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition duration-300"
+                    className="block w-full pl-12 pr-4 py-4 border-2 border-pink-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-300 placeholder:text-sm placeholder:font-semibold placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition duration-300"
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={handleChange}
@@ -271,7 +271,7 @@ function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
-                    className="block w-full pl-12 pr-14 py-4 border-2 border-green-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition duration-300"
+                    className="block w-full pl-12 pr-14 py-4 border-2 border-green-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-300 placeholder:text-sm placeholder:font-semibold placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition duration-300"
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
@@ -335,7 +335,7 @@ function RegisterPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
-                    className="block w-full pl-12 pr-14 py-4 border-2 border-green-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition duration-300"
+                    className="block w-full pl-12 pr-14 py-4 border-2 border-green-200 rounded-xl bg-white text-gray-900 placeholder:text-gray-300 placeholder:text-sm placeholder:font-semibold placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition duration-300"
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
