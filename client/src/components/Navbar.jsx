@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ListTodo, LogOut, User, Shield, Users, Activity } from 'lucide-react';
+import { LayoutDashboard, ListTodo, LogOut, User, Shield, Users, Activity, BarChart3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
@@ -14,7 +14,7 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-white/90 backdrop-blur-lg shadow-xl border-b-2 border-purple-100 relative z-10">
+    <nav className="sticky top-0 bg-white/90 backdrop-blur-lg shadow-xl border-b-2 border-purple-100 z-50">
       <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -53,6 +53,17 @@ function Navbar() {
             >
               <ListTodo className="h-4 w-4" />
               Tasks
+            </Link>
+            <Link
+              to="/analytics"
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                location.pathname === '/analytics'
+                  ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white shadow-lg'
+                  : 'text-gray-600 hover:bg-teal-100 hover:text-teal-700'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
             </Link>
             
             {/* Admin Menu */}

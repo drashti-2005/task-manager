@@ -131,18 +131,26 @@ export const updateTask = async (req, res) => {
       });
     }
     
-    task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    )
+    // Update task fields
+    Object.assign(task, req.body);
+    
+    // Set completedAt timestamp if status is being changed to completed
+    if (req.body.status === 'completed' && !task.completedAt) {
+      task.completedAt = new Date();
+    }
+    
+    // Clear completedAt if status is changed from completed to something else
+    if (req.body.status && req.body.status !== 'completed' && task.completedAt) {
+      task.completedAt = null;
+    }
+    
+    await task.save();
+    
+    const populatedTask = await Task.findById(task._id)
       .populate('assignedTo', 'name email')
       .populate('createdBy', 'name email');
     
-    res.status(200).json(task);
+    res.status(200).json(populatedTask);
   } catch (error) {
     res.status(500).json({
       success: false,

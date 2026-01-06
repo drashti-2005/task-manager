@@ -12,6 +12,7 @@ import TaskManagement from './pages/TaskManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
 import ActivityLogs from './pages/ActivityLogs';
+import Analytics from './pages/Analytics';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -74,6 +75,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="tasks" element={<TaskManagement />} />
+        <Route path="analytics" element={<Analytics />} />
         
         {/* Admin Routes */}
         <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

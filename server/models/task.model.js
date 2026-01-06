@@ -71,6 +71,11 @@ taskSchema.index({ priority: 1, status: 1 });
 taskSchema.index({ status: 1, dueDate: 1 });
 taskSchema.index({ assignedTo: 1, priority: 1, status: 1 });
 
+// Analytics-specific indexes for optimized aggregation queries
+taskSchema.index({ completedAt: 1 });
+taskSchema.index({ createdAt: 1, status: 1 });
+taskSchema.index({ assignedTo: 1, completedAt: 1 });
+
 // Update completedAt when status changes to completed
 taskSchema.pre('save', function(next) {
   if (this.isModified('status') && this.status === 'completed' && !this.completedAt) {
