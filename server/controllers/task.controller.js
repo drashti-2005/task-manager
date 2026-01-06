@@ -81,13 +81,14 @@ export const getTaskById = async (req, res) => {
 // @access  Private
 export const createTask = async (req, res) => {
   try {
-    const { title, description, status, priority, dueDate, tags } = req.body;
+    const { title, description, status, priority, startDate, dueDate, tags } = req.body;
     
     const task = await Task.create({
       title,
       description,
       status,
       priority,
+      startDate,
       dueDate,
       tags,
       assignedTo: req.user.id, // Assign to self by default
@@ -222,6 +223,129 @@ export const deleteTask = async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'Task deleted successfully',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Advanced search and filter tasks
+// @route   GET /api/tasks/search
+// @access  Private
+export const searchTasks = async (req, res) => {
+  try {
+    const {
+      q,           // Search query (text search)
+      priority,    // Filter by priority
+      status,      // Filter by status
+      startDate,   // Date range start
+      endDate,     // Date range end
+      page = 1,    // Pagination
+      limit = 20,  // Results per page
+      sortBy = 'createdAt', // Sort field
+      sortOrder = 'desc'    // Sort order
+    } = req.query;
+
+    // Build base query - user can only search their own tasks
+    // Admin can search all tasks (check if user role is admin)
+    let baseQuery = {};
+    
+    if (req.user.role !== 'admin') {
+      baseQuery.assignedTo = req.user.id;
+    }
+
+    // Text search using MongoDB text index
+    if (q && q.trim()) {
+      baseQuery.$text = { $search: q.trim() };
+    }
+
+    // Priority filter
+    if (priority) {
+      const priorities = priority.split(',').map(p => p.toLowerCase());
+      if (priorities.length === 1) {
+        baseQuery.priority = priorities[0];
+      } else {
+        baseQuery.priority = { $in: priorities };
+      }
+    }
+
+    // Status filter
+    if (status) {
+      const statuses = status.split(',').map(s => s.toLowerCase());
+      if (statuses.length === 1) {
+        baseQuery.status = statuses[0];
+      } else {
+        baseQuery.status = { $in: statuses };
+      }
+    }
+
+    // Date range filter (dueDate)
+    if (startDate || endDate) {
+      baseQuery.dueDate = {};
+      if (startDate) {
+        baseQuery.dueDate.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        baseQuery.dueDate.$lte = new Date(endDate);
+      }
+    }
+
+    // Build sort object
+    const sortObj = {};
+    
+    // If text search, include textScore for relevance sorting
+    if (q && q.trim()) {
+      sortObj.score = { $meta: 'textScore' };
+    }
+    
+    sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Projection - return only necessary fields for performance
+    const projection = q && q.trim() 
+      ? { score: { $meta: 'textScore' } } 
+      : {};
+
+    // Execute query with pagination
+    const tasks = await Task.find(baseQuery, projection)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email')
+      .lean(); // Use lean() for better performance
+
+    // Get total count for pagination
+    const total = await Task.countDocuments(baseQuery);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / parseInt(limit));
+    const hasNextPage = parseInt(page) < totalPages;
+    const hasPrevPage = parseInt(page) > 1;
+
+    res.status(200).json({
+      success: true,
+      data: tasks,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages,
+        hasNextPage,
+        hasPrevPage,
+      },
+      filters: {
+        q: q || null,
+        priority: priority || null,
+        status: status || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+      }
     });
   } catch (error) {
     res.status(500).json({

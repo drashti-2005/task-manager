@@ -19,7 +19,9 @@ function TaskDialog({
       description: '',
       status: 'pending',
       priority: 'medium',
+      startDate: '',
       dueDate: '',
+      tags: [],
     });
   };
 
@@ -112,16 +114,48 @@ function TaskDialog({
             </div>
           </div>
           
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                style={{ backgroundColor: 'white', color: 'black' }}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Due Date
+              </label>
+              <input
+                type="date"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                style={{ backgroundColor: 'white', color: 'black' }}
+              />
+            </div>
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Due Date
+              Tags (comma-separated)
             </label>
             <input
-              type="date"
-              name="dueDate"
-              value={formData.dueDate}
+              type="text"
+              name="tags"
+              value={Array.isArray(formData.tags) ? formData.tags.join(', ') : ''}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              placeholder="e.g., urgent, meeting, project"
+              autoComplete="off"
               style={{ backgroundColor: 'white', color: 'black' }}
             />
           </div>

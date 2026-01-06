@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ListTodo, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, ListTodo, LogOut, User, Shield, Users, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
@@ -31,7 +31,7 @@ function Navbar() {
           </motion.div>
           
           {/* Navigation Links */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <Link
               to="/dashboard"
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
@@ -54,15 +54,61 @@ function Navbar() {
               <ListTodo className="h-4 w-4" />
               Tasks
             </Link>
+            
+            {/* Admin Menu */}
+            {user?.role === 'admin' && (
+              <>
+                <Link
+                  to="/admin"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    location.pathname === '/admin'
+                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-orange-100 hover:text-orange-700'
+                  }`}
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Link>
+                <Link
+                  to="/admin/users"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    location.pathname === '/admin/users'
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-indigo-100 hover:text-indigo-700'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  Users
+                </Link>
+                <Link
+                  to="/admin/activity-logs"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    location.pathname === '/admin/activity-logs'
+                      ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg'
+                      : 'text-gray-600 hover:bg-green-100 hover:text-green-700'
+                  }`}
+                >
+                  <Activity className="h-4 w-4" />
+                  Logs
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Right Side - User Info & Actions */}
           <div className="flex items-center space-x-4">
             <div className="text-gray-700 bg-purple-50 px-4 py-2 rounded-lg border-2 border-purple-200 flex items-center gap-2">
               <User className="h-4 w-4 text-purple-600" />
-              <span className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                {user?.name || user?.email}
-              </span>
+              <div className="flex flex-col items-start">
+                <span className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-sm">
+                  {user?.name || user?.email}
+                </span>
+                {user?.role === 'admin' && (
+                  <span className="text-xs bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent font-semibold">
+                    Administrator
+                  </span>
+                )}
+              </div>
             </div>
             
             <motion.button

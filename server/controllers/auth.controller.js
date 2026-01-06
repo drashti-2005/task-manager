@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
+import { logLogin, logLogout } from '../utils/logger.utils.js';
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -34,6 +35,9 @@ export const register = async (req, res) => {
     // Generate token
     const token = generateToken(user._id);
 
+    // Log user registration
+    await logLogin(user._id, req, true);
+
     res.status(201).json({
       success: true,
       token,
@@ -62,15 +66,29 @@ export const login = async (req, res) => {
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      // Log failed login attempt (create temp user ID from email hash for logging)
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
     }
 
+    // Check if account is locked
+    if (user.isLocked()) {
+      await logLogin(user._id, req, false, 'Account is locked');
+      return res.status(403).json({
+        success: false,
+        message: 'Account is temporarily locked. Please try again later or contact support.',
+      });
+    }
+
     // Check if password matches
     const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) {
+      // Increment failed login attempts
+      await user.incrementLoginAttempts();
+      await logLogin(user._id, req, false, 'Invalid password');
+      
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
@@ -78,15 +96,22 @@ export const login = async (req, res) => {
     }
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!user.isActive || user.accountStatus !== 'active') {
+      await logLogin(user._id, req, false, 'Account is not active');
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated',
+        message: 'Account is deactivated. Please contact support.',
       });
     }
 
+    // Reset login attempts on successful login
+    await user.resetLoginAttempts();
+
     // Generate token
     const token = generateToken(user._id);
+
+    // Log successful login
+    await logLogin(user._id, req, true);
 
     res.status(200).json({
       success: true,
@@ -130,6 +155,11 @@ export const getCurrentUser = async (req, res) => {
 // @access  Private
 export const logout = async (req, res) => {
   try {
+    // Log logout activity
+    if (req.user && req.user.id) {
+      await logLogout(req.user.id, req);
+    }
+    
     // In a stateless JWT implementation, logout is handled on the client side
     // You can implement token blacklisting here if needed
     

@@ -9,6 +9,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import TaskManagement from './pages/TaskManagement';
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
+import ActivityLogs from './pages/ActivityLogs';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -16,6 +19,21 @@ const ProtectedRoute = ({ children }) => {
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Admin Route Component
+const AdminRoute = ({ children }) => {
+  const { user } = useAuth();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
   }
   
   return children;
@@ -56,6 +74,11 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="tasks" element={<TaskManagement />} />
+        
+        {/* Admin Routes */}
+        <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
+        <Route path="admin/activity-logs" element={<AdminRoute><ActivityLogs /></AdminRoute>} />
       </Route>
 
       {/* 404 Route */}

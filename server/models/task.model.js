@@ -20,6 +20,9 @@ const taskSchema = new mongoose.Schema({
     enum: ['low', 'medium', 'high'],
     default: 'medium',
   },
+  startDate: {
+    type: Date,
+  },
   dueDate: {
     type: Date,
   },
@@ -48,6 +51,25 @@ const taskSchema = new mongoose.Schema({
 taskSchema.index({ assignedTo: 1, status: 1 });
 taskSchema.index({ createdBy: 1 });
 taskSchema.index({ dueDate: 1 });
+
+// Text index for full-text search on title, description, and tags
+taskSchema.index({ 
+  title: 'text', 
+  description: 'text', 
+  tags: 'text' 
+}, {
+  weights: {
+    title: 10,      // Title has highest priority in search
+    tags: 5,        // Tags have medium priority
+    description: 1  // Description has lowest priority
+  },
+  name: 'task_search_index'
+});
+
+// Compound indexes for common filter combinations
+taskSchema.index({ priority: 1, status: 1 });
+taskSchema.index({ status: 1, dueDate: 1 });
+taskSchema.index({ assignedTo: 1, priority: 1, status: 1 });
 
 // Update completedAt when status changes to completed
 taskSchema.pre('save', function(next) {

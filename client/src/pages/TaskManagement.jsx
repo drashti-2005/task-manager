@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ListTodo, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { ListTodo, Plus, Edit2, Trash2, X, Search, Filter, Calendar } from 'lucide-react';
 import { taskAPI } from '../api/api';
 import TaskDialog from '../components/TaskDialog';
+import { useDebounce } from '../hooks/useDebounce';
 
 function TaskManagement() {
   const [tasks, setTasks] = useState([]);
@@ -14,17 +14,50 @@ function TaskManagement() {
     description: '',
     status: 'pending',
     priority: 'medium',
+    startDate: '',
     dueDate: '',
+    tags: [],
   });
+
+  // Search and Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    priority: '',
+    status: '',
+    startDate: '',
+    endDate: '',
+  });
+  
+  // Debounce search query for better performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [debouncedSearchQuery, filters]);
 
   const fetchTasks = async () => {
     try {
-      const tasks = await taskAPI.getAllTasks();
-      setTasks(tasks);
+      setLoading(true);
+      
+      // If search or filters are active, use search endpoint
+      if (debouncedSearchQuery || filters.priority || filters.status || filters.startDate || filters.endDate) {
+        const params = {
+          ...(debouncedSearchQuery && { q: debouncedSearchQuery }),
+          ...(filters.priority && { priority: filters.priority }),
+          ...(filters.status && { status: filters.status }),
+          ...(filters.startDate && { startDate: filters.startDate }),
+          ...(filters.endDate && { endDate: filters.endDate }),
+        };
+        
+        const response = await taskAPI.searchTasks(params);
+        setTasks(response.data);
+      } else {
+        // Otherwise, use regular getAllTasks
+        const tasks = await taskAPI.getAllTasks();
+        setTasks(tasks);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -33,10 +66,20 @@ function TaskManagement() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    
+    // Handle tags separately if needed
+    if (name === 'tags') {
+      setFormData({
+        ...formData,
+        tags: value.split(',').map(tag => tag.trim()).filter(tag => tag),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -56,7 +99,9 @@ function TaskManagement() {
         description: '',
         status: 'pending',
         priority: 'medium',
+        startDate: '',
         dueDate: '',
+        tags: [],
       });
       fetchTasks();
     } catch (error) {
@@ -71,7 +116,9 @@ function TaskManagement() {
       description: task.description,
       status: task.status,
       priority: task.priority,
+      startDate: task.startDate ? task.startDate.split('T')[0] : '',
       dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+      tags: task.tags || [],
     });
     setShowModal(true);
   };
@@ -96,45 +143,157 @@ function TaskManagement() {
     }
   };
 
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value,
+    }));
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilters({
+      priority: '',
+      status: '',
+      startDate: '',
+      endDate: '',
+    });
+  };
+
+  const hasActiveFilters = searchQuery || filters.priority || filters.status || filters.startDate || filters.endDate;
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="h-12 w-12 border-4 border-purple-400 border-t-transparent rounded-full"
-        />
+        <div className="h-12 w-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center"
-      >
+      <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-3">
           <ListTodo className="h-8 w-8 text-purple-500" />
           Task Management
         </h1>
-        <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={() => setShowModal(true)}
           className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
         >
           <Plus className="h-5 w-5" />
           New Task
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
+
+      {/* Search and Filter Section */}
+      <div
+        className="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-100"
+      >
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-400" />
+              <input
+                type="text"
+                placeholder="Search tasks by title, description, or tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50 transition-all duration-200"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg flex items-center gap-2 ${
+                showFilters 
+                  ? 'bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 text-white' 
+                  : 'bg-gradient-to-r from-purple-100 via-blue-100 to-teal-100 text-purple-700 hover:from-purple-200 hover:via-blue-200 hover:to-teal-200'
+              }`}
+            >
+              <Filter className="h-5 w-5" />
+              Filters
+            </button>
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-red-100 to-red-200 text-red-700 hover:from-red-200 hover:to-red-300 transition duration-300 shadow-lg flex items-center gap-2"
+              >
+                <X className="h-5 w-5" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Filter Panel */}
+          {showFilters && (
+            <div
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t-2 border-purple-100"
+            >
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    value={filters.priority}
+                    onChange={(e) => handleFilterChange('priority', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50 transition-all duration-200"
+                  >
+                    <option value="">All Priorities</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 transition-all duration-200"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-teal-50/50 transition-all duration-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50 transition-all duration-200"
+                  />
+                </div>
+              </div>
+            )}
+        </div>
+      </div>
 
       {/* Tasks Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+      <div
         className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-purple-100"
       >
         <table className="min-w-full divide-y divide-purple-100">
@@ -150,9 +309,12 @@ function TaskManagement() {
                 Priority
               </th>
               <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                Due Date
+                Start Date
               </th>
               <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                Due Date
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-teal-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -160,7 +322,7 @@ function TaskManagement() {
           <tbody className="bg-white divide-y divide-purple-50">
             {tasks.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
                     <ListTodo className="h-12 w-12 text-purple-300" />
                     <p>No tasks found. Create your first task!</p>
@@ -169,13 +331,9 @@ function TaskManagement() {
               </tr>
             ) : (
               tasks.map((task, index) => (
-                <motion.tr
+                <tr
                   key={task._id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ backgroundColor: '#faf5ff' }}
-                  className="hover:shadow-md transition-all duration-200"
+                  className="hover:bg-purple-50 hover:shadow-md transition-all duration-200"
                 >
                   <td className="px-6 py-4">
                     <div className="text-sm font-semibold text-gray-800">{task.title}</div>
@@ -206,57 +364,47 @@ function TaskManagement() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                    {task.startDate ? new Date(task.startDate).toLocaleDateString() : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                     {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    <button
                       onClick={() => handleEdit(task)}
-                      className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1"
+                      className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 transition"
                     >
                       <Edit2 className="h-4 w-4" />
                       Edit
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                    </button>
+                    <button
                       onClick={() => handleDelete(task._id)}
-                      className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1"
+                      className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1 transition"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
-                    </motion.button>
+                    </button>
                   </td>
-                </motion.tr>
+                </tr>
               ))
             )}
           </tbody>
         </table>
-      </motion.div>
+      </div>
 
       {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        >
+            <div
               className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border-2 border-purple-200"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   {editingTask ? 'Edit Task' : 'New Task'}
                 </h2>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   onClick={() => {
                     setShowModal(false);
                     setEditingTask(null);
@@ -265,13 +413,15 @@ function TaskManagement() {
                       description: '',
                       status: 'pending',
                       priority: 'medium',
+                      startDate: '',
                       dueDate: '',
+                      tags: [],
                     });
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 transition"
                 >
                   <X className="h-6 w-6" />
-                </motion.button>
+                </button>
               </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -336,32 +486,43 @@ function TaskManagement() {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  name="dueDate"
-                  value={formData.dueDate}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 transition-all duration-200"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-teal-50/50 transition-all duration-200"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    value={formData.dueDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50/50 transition-all duration-200"
+                  />
+                </div>
               </div>
               
               <div className="flex gap-4 mt-6">
-                <motion.button
+                <button
                   type="submit"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
                   className="flex-1 bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white py-3 rounded-xl font-bold transition duration-300 shadow-lg"
                 >
                   {editingTask ? 'Update' : 'Create'}
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   type="button"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     setShowModal(false);
                     setEditingTask(null);
@@ -370,19 +531,20 @@ function TaskManagement() {
                       description: '',
                       status: 'pending',
                       priority: 'medium',
+                      startDate: '',
                       dueDate: '',
+                      tags: [],
                     });
                   }}
                   className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white py-3 rounded-xl font-bold transition duration-300 shadow-lg"
                 >
                   Cancel
-                </motion.button>
+                </button>
               </div>
             </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </div>
   );
 }

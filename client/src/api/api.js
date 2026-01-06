@@ -93,6 +93,11 @@ export const taskAPI = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     }),
+  
+  searchTasks: (params) => {
+    const queryString = params ? `?${new URLSearchParams(params)}` : '';
+    return fetchAPI(`/tasks/search${queryString}`);
+  },
 };
 
 // User API
@@ -111,6 +116,94 @@ export const userAPI = {
     fetchAPI(`/users/${id}`, {
       method: 'DELETE',
     }),
+};
+
+// Admin API
+export const adminAPI = {
+  // Dashboard & Analytics
+  getDashboardStats: () => fetchAPI('/admin/dashboard/stats'),
+  getTaskAnalytics: (period = '7d') => fetchAPI(`/admin/analytics/tasks?period=${period}`),
+  getUserAnalytics: () => fetchAPI('/admin/analytics/users'),
+  getProductivityReport: (params) => {
+    const queryString = params ? `?${new URLSearchParams(params)}` : '';
+    return fetchAPI(`/admin/reports/productivity${queryString}`);
+  },
+  getSystemHealth: () => fetchAPI('/admin/system/health'),
+
+  // User Management
+  getAllUsers: (params) => {
+    const queryString = params ? `?${new URLSearchParams(params)}` : '';
+    return fetchAPI(`/admin/users${queryString}`);
+  },
+  getUserById: (id) => fetchAPI(`/admin/users/${id}`),
+  createUser: (userData) =>
+    fetchAPI('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    }),
+  updateUser: (id, userData) =>
+    fetchAPI(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    }),
+  deleteUser: (id) =>
+    fetchAPI(`/admin/users/${id}`, {
+      method: 'DELETE',
+    }),
+  resetUserPassword: (id, newPassword) =>
+    fetchAPI(`/admin/users/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ newPassword }),
+    }),
+  unlockUserAccount: (id) =>
+    fetchAPI(`/admin/users/${id}/unlock`, {
+      method: 'POST',
+    }),
+
+  // Task Management
+  getAllTasksAdmin: (params) => {
+    const queryString = params ? `?${new URLSearchParams(params)}` : '';
+    return fetchAPI(`/admin/tasks${queryString}`);
+  },
+  updateTaskAdmin: (id, taskData) =>
+    fetchAPI(`/admin/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(taskData),
+    }),
+  deleteTaskAdmin: (id) =>
+    fetchAPI(`/admin/tasks/${id}`, {
+      method: 'DELETE',
+    }),
+  reassignTask: (id, assignedTo) =>
+    fetchAPI(`/admin/tasks/${id}/reassign`, {
+      method: 'PATCH',
+      body: JSON.stringify({ assignedTo }),
+    }),
+  bulkDeleteTasks: (taskIds) =>
+    fetchAPI('/admin/tasks/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ taskIds }),
+    }),
+  bulkUpdateTasks: (taskIds, updates) =>
+    fetchAPI('/admin/tasks/bulk-update', {
+      method: 'POST',
+      body: JSON.stringify({ taskIds, updates }),
+    }),
+  getTaskStatsByUser: () => fetchAPI('/admin/tasks/stats/by-user'),
+
+  // Activity Logs
+  getActivityLogs: (params) => {
+    const queryString = params ? `?${new URLSearchParams(params)}` : '';
+    return fetchAPI(`/admin/activity-logs${queryString}`);
+  },
+  getUserActivityHistory: (userId, limit = 50) =>
+    fetchAPI(`/admin/activity-logs/user/${userId}?limit=${limit}`),
+  getEntityAuditTrail: (entityType, entityId) =>
+    fetchAPI(`/admin/activity-logs/entity/${entityType}/${entityId}`),
+  getActivityLogStats: (period = '7d') =>
+    fetchAPI(`/admin/activity-logs/stats?period=${period}`),
+  getFailedLogins: (limit = 50) =>
+    fetchAPI(`/admin/activity-logs/failed-logins?limit=${limit}`),
 };
 
 export default fetchAPI;

@@ -7,6 +7,7 @@ import { connectDB } from './utils/db.utils.js';
 import authRoutes from './routes/auth.route.js';
 import taskRoutes from './routes/task.route.js';
 import userRoutes from './routes/user.route.js';
+import adminRoutes from './routes/admin.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

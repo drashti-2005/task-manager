@@ -25,10 +25,39 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user',
+    index: true,
   },
   isActive: {
     type: Boolean,
     default: true,
+  },
+  // Account status for admin control
+  accountStatus: {
+    type: String,
+    enum: ['active', 'suspended', 'inactive'],
+    default: 'active',
+  },
+  // Last login timestamp
+  lastLogin: {
+    type: Date,
+  },
+  // Failed login attempts counter (security)
+  failedLoginAttempts: {
+    type: Number,
+    default: 0,
+  },
+  // Account lockout until (after too many failed attempts)
+  lockoutUntil: {
+    type: Date,
+  },
+  // Last password change date
+  lastPasswordChange: {
+    type: Date,
+  },
+  // Profile image URL
+  avatar: {
+    type: String,
+    trim: true,
   },
 }, {
   timestamps: true,
@@ -48,6 +77,41 @@ userSchema.pre('save', async function(next) {
 // Method to compare passwords
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to check if account is locked
+userSchema.methods.isLocked = function() {
+  return !!(this.lockoutUntil && this.lockoutUntil > Date.now());
+};
+
+// Method to increment failed login attempts
+userSchema.methods.incrementLoginAttempts = async function() {
+  // Reset if lock has expired
+  if (this.lockoutUntil && this.lockoutUntil < Date.now()) {
+    return await this.updateOne({
+      $set: { failedLoginAttempts: 1 },
+      $unset: { lockoutUntil: 1 },
+    });
+  }
+  
+  const updates = { $inc: { failedLoginAttempts: 1 } };
+  const maxAttempts = 5;
+  const lockTime = 2 * 60 * 60 * 1000; // 2 hours
+  
+  // Lock account after max attempts
+  if (this.failedLoginAttempts + 1 >= maxAttempts && !this.isLocked()) {
+    updates.$set = { lockoutUntil: Date.now() + lockTime };
+  }
+  
+  return await this.updateOne(updates);
+};
+
+// Method to reset login attempts
+userSchema.methods.resetLoginAttempts = async function() {
+  return await this.updateOne({
+    $set: { failedLoginAttempts: 0, lastLogin: new Date() },
+    $unset: { lockoutUntil: 1 },
+  });
 };
 
 // Remove password from JSON output
