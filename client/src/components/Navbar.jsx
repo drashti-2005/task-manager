@@ -4,13 +4,23 @@ import { LayoutDashboard, ListTodo, LogOut, User, Shield, Users, Activity, BarCh
 import { useAuth } from '../context/AuthContext';
 
 function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin, isManager, hasManagerAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const getRoleBadge = () => {
+    if (isAdmin) {
+      return <span className="text-xs bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent font-semibold">Administrator</span>;
+    }
+    if (isManager) {
+      return <span className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent font-semibold">Manager</span>;
+    }
+    return <span className="text-xs text-gray-500 font-medium">User</span>;
   };
 
   return (
@@ -65,9 +75,24 @@ function Navbar() {
               <BarChart3 className="h-4 w-4" />
               Analytics
             </Link>
+
+            {/* Teams Menu - Manager and Admin only */}
+            {hasManagerAccess && (
+              <Link
+                to="/teams"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  location.pathname === '/teams'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-blue-100 hover:text-blue-700'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                Teams
+              </Link>
+            )}
             
-            {/* Admin Menu */}
-            {user?.role === 'admin' && (
+            {/* Admin Menu - Admin only */}
+            {isAdmin && (
               <>
                 <Link
                   to="/admin"
@@ -114,11 +139,7 @@ function Navbar() {
                 <span className="font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent text-sm">
                   {user?.name || user?.email}
                 </span>
-                {user?.role === 'admin' && (
-                  <span className="text-xs bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent font-semibold">
-                    Administrator
-                  </span>
-                )}
+                {getRoleBadge()}
               </div>
             </div>
             

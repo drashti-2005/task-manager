@@ -67,3 +67,34 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+// Role-specific middleware
+export const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin privileges required.',
+    });
+  }
+  next();
+};
+
+export const isManager = (req, res, next) => {
+  if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Manager privileges required.',
+    });
+  }
+  next();
+};
+
+export const isManagerOrAdmin = (req, res, next) => {
+  if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Manager or Admin privileges required.',
+    });
+  }
+  next();
+};

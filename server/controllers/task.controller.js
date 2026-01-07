@@ -1,4 +1,6 @@
 import Task from '../models/task.model.js';
+import User from '../models/user.model.js';
+import Team from '../models/team.model.js';
 
 // @desc    Get all tasks for logged-in user
 // @route   GET /api/tasks
@@ -7,8 +9,27 @@ export const getAllTasks = async (req, res) => {
   try {
     const { status, priority, sortBy } = req.query;
     
-    // Build query
-    const query = { assignedTo: req.user.id };
+    // Build query based on user role
+    let query = {};
+    
+    // User: can see tasks assigned to them OR tasks in teams they're part of OR tasks they created themselves
+    // Manager: can see all tasks (team tasks)
+    // Admin: can see all tasks
+    if (req.user.role === 'user') {
+      // Find teams the user is a member of
+      const userTeams = await Team.find({ members: req.user.id, isActive: true }).select('_id');
+      const teamIds = userTeams.map(team => team._id);
+      
+      query.$or = [
+        { assignedTo: req.user.id }, // Tasks assigned to user
+        { assignedToTeam: { $in: teamIds } }, // Tasks assigned to user's teams
+        { createdBy: req.user.id, assignmentType: 'self' }, // Tasks user created for themselves
+      ];
+    } else if (req.user.role === 'manager') {
+      // Managers can see all tasks
+    } else if (req.user.role === 'admin') {
+      // Admins can see all tasks
+    }
     
     if (status) {
       query.status = status;
@@ -30,8 +51,9 @@ export const getAllTasks = async (req, res) => {
     
     const tasks = await Task.find(query)
       .sort(sort)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
+      .populate('assignedTo', 'name email role')
+      .populate('assignedToTeam', 'name')
+      .populate('createdBy', 'name email role');
     
     res.status(200).json(tasks);
   } catch (error) {
@@ -48,8 +70,9 @@ export const getAllTasks = async (req, res) => {
 export const getTaskById = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
+      .populate('assignedTo', 'name email role')
+      .populate('assignedToTeam', 'name members')
+      .populate('createdBy', 'name email role');
     
     if (!task) {
       return res.status(404).json({
@@ -58,14 +81,40 @@ export const getTaskById = async (req, res) => {
       });
     }
     
-    // Check if user has access to this task
-    if (task.assignedTo._id.toString() !== req.user.id && 
-        task.createdBy._id.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to access this task',
-      });
+    // Role-based access control
+    // User: can view tasks assigned to them or their team or created by them
+    // Manager: can view all tasks
+    // Admin: can view all tasks
+    if (req.user.role === 'user') {
+      let hasAccess = false;
+      
+      // Check if assigned to user
+      if (task.assignedTo && task.assignedTo._id.toString() === req.user.id) {
+        hasAccess = true;
+      }
+      
+      // Check if assigned to user's team
+      if (task.assignedToTeam) {
+        const team = await Team.findOne({ 
+          _id: task.assignedToTeam._id, 
+          members: req.user.id 
+        });
+        if (team) hasAccess = true;
+      }
+      
+      // Check if created by user
+      if (task.createdBy._id.toString() === req.user.id) {
+        hasAccess = true;
+      }
+      
+      if (!hasAccess) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to access this task',
+        });
+      }
     }
+    // Managers and admins can view any task
     
     res.status(200).json(task);
   } catch (error) {
@@ -78,12 +127,12 @@ export const getTaskById = async (req, res) => {
 
 // @desc    Create new task
 // @route   POST /api/tasks
-// @access  Private
+// @access  Private (Users can create own tasks, Managers can assign to others/teams)
 export const createTask = async (req, res) => {
   try {
-    const { title, description, status, priority, startDate, dueDate, tags } = req.body;
+    const { title, description, status, priority, startDate, dueDate, tags, assignedTo, assignedToTeam } = req.body;
     
-    const task = await Task.create({
+    let taskData = {
       title,
       description,
       status,
@@ -91,13 +140,51 @@ export const createTask = async (req, res) => {
       startDate,
       dueDate,
       tags,
-      assignedTo: req.user.id, // Assign to self by default
       createdBy: req.user.id,
-    });
+    };
+
+    // Determine assignment type
+    if (req.user.role === 'user') {
+      // Users can only create tasks for themselves
+      taskData.assignedTo = req.user.id;
+      taskData.assignmentType = 'self';
+    } else if (req.user.role === 'manager' || req.user.role === 'admin') {
+      // Managers can assign to individuals or teams
+      if (assignedToTeam) {
+        // Verify team exists
+        const team = await Team.findById(assignedToTeam);
+        if (!team) {
+          return res.status(404).json({
+            success: false,
+            message: 'Team not found',
+          });
+        }
+        taskData.assignedToTeam = assignedToTeam;
+        taskData.assignmentType = 'team';
+      } else if (assignedTo) {
+        // Verify user exists
+        const user = await User.findById(assignedTo);
+        if (!user) {
+          return res.status(404).json({
+            success: false,
+            message: 'User not found',
+          });
+        }
+        taskData.assignedTo = assignedTo;
+        taskData.assignmentType = 'individual';
+      } else {
+        // Assign to self
+        taskData.assignedTo = req.user.id;
+        taskData.assignmentType = 'self';
+      }
+    }
+    
+    const task = await Task.create(taskData);
     
     const populatedTask = await Task.findById(task._id)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
+      .populate('assignedTo', 'name email role')
+      .populate('assignedToTeam', 'name members')
+      .populate('createdBy', 'name email role');
     
     res.status(201).json(populatedTask);
   } catch (error) {
@@ -122,14 +209,29 @@ export const updateTask = async (req, res) => {
       });
     }
     
-    // Check if user has access to update this task
-    if (task.assignedTo.toString() !== req.user.id && 
-        task.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this task',
-      });
+    // Role-based access control for updates
+    // Users: can only update status and add comments on their assigned tasks
+    // Managers: can update any task field including reassignment
+    if (req.user.role === 'user') {
+      if (task.assignedTo.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to update this task',
+        });
+      }
+      // Users can only update status, not reassign or change other critical fields
+      const allowedFields = ['status', 'description'];
+      const updateFields = Object.keys(req.body);
+      const hasUnauthorizedField = updateFields.some(field => !allowedFields.includes(field));
+      
+      if (hasUnauthorizedField) {
+        return res.status(403).json({
+          success: false,
+          message: 'Users can only update task status and description',
+        });
+      }
     }
+    // Managers and admins can update any field
     
     // Update task fields
     Object.assign(task, req.body);
@@ -147,8 +249,8 @@ export const updateTask = async (req, res) => {
     await task.save();
     
     const populatedTask = await Task.findById(task._id)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
+      .populate('assignedTo', 'name email role')
+      .populate('createdBy', 'name email role');
     
     res.status(200).json(populatedTask);
   } catch (error) {
@@ -175,25 +277,30 @@ export const updateTaskStatus = async (req, res) => {
       });
     }
     
-    // Check if user has access to update this task
-    if (task.assignedTo.toString() !== req.user.id && 
-        task.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this task',
-      });
+    // Users can update status of their assigned tasks
+    // Managers can update status of any task
+    if (req.user.role === 'user') {
+      if (task.assignedTo.toString() !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to update this task',
+        });
+      }
     }
+    // Managers and admins can update any task status
     
     task.status = status;
     if (status === 'completed') {
       task.completedAt = new Date();
+    } else {
+      task.completedAt = null;
     }
     
     await task.save();
     
     const populatedTask = await Task.findById(task._id)
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
+      .populate('assignedTo', 'name email role')
+      .populate('createdBy', 'name email role');
     
     res.status(200).json(populatedTask);
   } catch (error) {
@@ -206,23 +313,23 @@ export const updateTaskStatus = async (req, res) => {
 
 // @desc    Delete task
 // @route   DELETE /api/tasks/:id
-// @access  Private
+// @access  Private (Manager only)
 export const deleteTask = async (req, res) => {
   try {
+    // Only managers can delete tasks
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only managers can delete tasks',
+      });
+    }
+    
     const task = await Task.findById(req.params.id);
     
     if (!task) {
       return res.status(404).json({
         success: false,
         message: 'Task not found',
-      });
-    }
-    
-    // Check if user has access to delete this task
-    if (task.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to delete this task',
       });
     }
     
@@ -324,8 +431,8 @@ export const searchTasks = async (req, res) => {
       .sort(sortObj)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email')
+      .populate('assignedTo', 'name email role')
+      .populate('createdBy', 'name email role')
       .lean(); // Use lean() for better performance
 
     // Get total count for pagination
@@ -354,6 +461,204 @@ export const searchTasks = async (req, res) => {
         startDate: startDate || null,
         endDate: endDate || null,
       }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get team productivity stats (Manager only)
+// @route   GET /api/tasks/team/productivity
+// @access  Private (Manager, Admin)
+export const getTeamProductivity = async (req, res) => {
+  try {
+    // Only managers and admins can access
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Manager privileges required.',
+      });
+    }
+
+    const stats = await Task.aggregate([
+      {
+        $group: {
+          _id: '$assignedTo',
+          totalTasks: { $sum: 1 },
+          completedTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+          },
+          inProgressTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'in-progress'] }, 1, 0] }
+          },
+          pendingTasks: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      {
+        $unwind: '$user'
+      },
+      {
+        $project: {
+          _id: 1,
+          userName: '$user.name',
+          userEmail: '$user.email',
+          userRole: '$user.role',
+          totalTasks: 1,
+          completedTasks: 1,
+          inProgressTasks: 1,
+          pendingTasks: 1,
+          completionRate: {
+            $cond: [
+              { $eq: ['$totalTasks', 0] },
+              0,
+              { $multiply: [{ $divide: ['$completedTasks', '$totalTasks'] }, 100] }
+            ]
+          }
+        }
+      },
+      {
+        $sort: { completionRate: -1 }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Reassign task to another user (Manager only)
+// @route   PATCH /api/tasks/:id/reassign
+// @access  Private (Manager, Admin)
+export const reassignTask = async (req, res) => {
+  try {
+    // Only managers and admins can reassign
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only managers can reassign tasks',
+      });
+    }
+
+    const { assignedTo } = req.body;
+
+    if (!assignedTo) {
+      return res.status(400).json({
+        success: false,
+        message: 'assignedTo field is required',
+      });
+    }
+
+    // Verify the user exists
+    const userExists = await User.findById(assignedTo);
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({
+        success: false,
+        message: 'Task not found',
+      });
+    }
+
+    task.assignedTo = assignedTo;
+    await task.save();
+
+    const populatedTask = await Task.findById(task._id)
+      .populate('assignedTo', 'name email role')
+      .populate('createdBy', 'name email role');
+
+    res.status(200).json(populatedTask);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get all users for task assignment (Manager only)
+// @route   GET /api/tasks/users
+// @access  Private (Manager, Admin)
+export const getUsersForAssignment = async (req, res) => {
+  try {
+    // Only managers and admins can access
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Manager privileges required.',
+      });
+    }
+
+    // Get all users with role 'user' only (exclude managers and admins)
+    const users = await User.find({
+      role: 'user'
+    })
+    .select('name email role isActive accountStatus')
+    .sort('name');
+
+    console.log('Found users:', users.length);
+    console.log('Users data:', users);
+
+    res.status(200).json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get all teams for task assignment (Manager only)
+// @route   GET /api/tasks/teams
+// @access  Private (Manager, Admin)
+export const getTeamsForAssignment = async (req, res) => {
+  try {
+    // Only managers and admins can access
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Manager privileges required.',
+      });
+    }
+
+    // Get all active teams
+    const teams = await Team.find({ isActive: true })
+      .select('name members')
+      .populate('members', 'name email')
+      .sort('name');
+
+    res.status(200).json({
+      success: true,
+      data: teams
     });
   } catch (error) {
     res.status(500).json({

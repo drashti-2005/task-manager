@@ -98,6 +98,19 @@ export const taskAPI = {
     const queryString = params ? `?${new URLSearchParams(params)}` : '';
     return fetchAPI(`/tasks/search${queryString}`);
   },
+
+  // Manager-specific endpoints
+  getTeamProductivity: () => fetchAPI('/tasks/team/productivity'),
+  
+  getUsersForAssignment: () => fetchAPI('/tasks/users'),
+  
+  getTeamsForAssignment: () => fetchAPI('/tasks/teams'),
+  
+  reassignTask: (id, assignedTo) => 
+    fetchAPI(`/tasks/${id}/reassign`, {
+      method: 'PATCH',
+      body: JSON.stringify({ assignedTo }),
+    }),
 };
 
 // User API
@@ -204,6 +217,43 @@ export const adminAPI = {
     fetchAPI(`/admin/activity-logs/stats?period=${period}`),
   getFailedLogins: (limit = 50) =>
     fetchAPI(`/admin/activity-logs/failed-logins?limit=${limit}`),
+};
+
+// Team API
+export const teamAPI = {
+  getAll: () => fetchAPI('/teams'),
+  
+  getTeamById: (id) => fetchAPI(`/teams/${id}`),
+  
+  create: (teamData) =>
+    fetchAPI('/teams', {
+      method: 'POST',
+      body: JSON.stringify(teamData),
+    }),
+  
+  update: (id, teamData) =>
+    fetchAPI(`/teams/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(teamData),
+    }),
+  
+  delete: (id) =>
+    fetchAPI(`/teams/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  addTeamMembers: (id, userIds) =>
+    fetchAPI(`/teams/${id}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ userIds }),
+    }),
+  
+  removeTeamMember: (id, userId) =>
+    fetchAPI(`/teams/${id}/members/${userId}`, {
+      method: 'DELETE',
+    }),
+  
+  getUsersForTeam: () => fetchAPI('/tasks/users'),
 };
 
 export default fetchAPI;

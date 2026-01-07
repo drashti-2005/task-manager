@@ -14,18 +14,29 @@ export const getOverview = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    // Admin can view all users' analytics (don't pass userId to get all), regular users see only their own
+    // Role-based filtering:
+    // Admin: can view all users' analytics
+    // Manager: can view team-wide analytics
+    // User: can only view their own analytics
     const filters = {
       startDate,
       endDate
     };
     
-    // Only add userId filter for non-admin users
-    if (req.user.role !== 'admin') {
+    if (req.user.role === 'user') {
+      // Users can only see their own data
       filters.userId = req.user._id;
-    } else if (req.query.userId) {
-      // Admin can optionally filter by specific userId
-      filters.userId = req.query.userId;
+    } else if (req.user.role === 'manager') {
+      // Managers see all tasks (team-wide) unless they specify a userId
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
+      // Otherwise, no userId filter - shows all tasks
+    } else if (req.user.role === 'admin') {
+      // Admins see all tasks unless they specify a userId
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
     }
 
     const analytics = await AnalyticsService.getOverviewAnalytics(filters);
@@ -67,12 +78,17 @@ export const getCompletionTrends = async (req, res) => {
       groupBy
     };
     
-    // Only add userId filter for non-admin users
-    if (req.user.role !== 'admin') {
+    // Role-based filtering
+    if (req.user.role === 'user') {
       filters.userId = req.user._id;
-    } else if (req.query.userId) {
-      // Admin can optionally filter by specific userId
-      filters.userId = req.query.userId;
+    } else if (req.user.role === 'manager') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
+    } else if (req.user.role === 'admin') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
     }
 
     const trends = await AnalyticsService.getCompletionTrends(filters);
@@ -114,12 +130,17 @@ export const getProductivity = async (req, res) => {
       groupBy
     };
     
-    // Only add userId filter for non-admin users
-    if (req.user.role !== 'admin') {
+    // Role-based filtering
+    if (req.user.role === 'user') {
       filters.userId = req.user._id;
-    } else if (req.query.userId) {
-      // Admin can optionally filter by specific userId
-      filters.userId = req.query.userId;
+    } else if (req.user.role === 'manager') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
+    } else if (req.user.role === 'admin') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
     }
 
     const productivity = await AnalyticsService.getProductivityMetrics(filters);
@@ -152,12 +173,17 @@ export const getTimeAnalysis = async (req, res) => {
       endDate
     };
     
-    // Only add userId filter for non-admin users
-    if (req.user.role !== 'admin') {
+    // Role-based filtering
+    if (req.user.role === 'user') {
       filters.userId = req.user._id;
-    } else if (req.query.userId) {
-      // Admin can optionally filter by specific userId
-      filters.userId = req.query.userId;
+    } else if (req.user.role === 'manager') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
+    } else if (req.user.role === 'admin') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
     }
 
     const timeAnalysis = await AnalyticsService.getTimeAnalysis(filters);
@@ -191,12 +217,17 @@ export const getBestDays = async (req, res) => {
       limit: parseInt(limit)
     };
     
-    // Only add userId filter for non-admin users
-    if (req.user.role !== 'admin') {
+    // Role-based filtering
+    if (req.user.role === 'user') {
       filters.userId = req.user._id;
-    } else if (req.query.userId) {
-      // Admin can optionally filter by specific userId
-      filters.userId = req.query.userId;
+    } else if (req.user.role === 'manager') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
+    } else if (req.user.role === 'admin') {
+      if (req.query.userId) {
+        filters.userId = req.query.userId;
+      }
     }
 
     const bestDays = await AnalyticsService.getBestPerformingDays(filters);
