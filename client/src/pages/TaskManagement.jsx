@@ -643,9 +643,9 @@ function TaskManagement() {
                         className="w-full px-3 py-2 text-sm border-2 border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-indigo-50/50 transition-all duration-200"
                       >
                         <option value="">Select User</option>
-                        {users.map(user => (
+                        {users.filter(user => user.role === 'employee').map(user => (
                           <option key={user._id} value={user._id}>
-                            {user.name} ({user.email}) - {user.role}
+                            {user.name} ({user.email})
                           </option>
                         ))}
                       </select>

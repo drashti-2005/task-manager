@@ -64,17 +64,6 @@ function Navbar() {
               <ListTodo className="h-4 w-4" />
               Tasks
             </Link>
-            <Link
-              to="/analytics"
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                location.pathname === '/analytics'
-                  ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-teal-100 hover:text-teal-700'
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </Link>
 
             {/* Teams Menu - Manager and Admin only */}
             {hasManagerAccess && (
@@ -90,6 +79,18 @@ function Navbar() {
                 Teams
               </Link>
             )}
+
+            <Link
+              to="/analytics"
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                location.pathname === '/analytics'
+                  ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white shadow-lg'
+                  : 'text-gray-600 hover:bg-teal-100 hover:text-teal-700'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </Link>
             
             {/* Admin Menu - Admin only */}
             {isAdmin && (

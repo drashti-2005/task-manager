@@ -622,9 +622,9 @@ export const getUsersForAssignment = async (req, res) => {
       });
     }
 
-    // Get all users with role 'user' only (exclude managers and admins)
+    // Get all employees with role 'employee' only (exclude managers and admins)
     const users = await User.find({
-      role: 'user'
+      role: 'employee'
     })
     .select('name email role isActive accountStatus')
     .sort('name');
