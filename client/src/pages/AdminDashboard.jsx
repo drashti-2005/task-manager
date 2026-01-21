@@ -13,7 +13,15 @@ import {
   UserCheck,
   Calendar,
   RefreshCw,
+  Award,
+  Target,
+  Zap,
+  BarChart3,
 } from 'lucide-react';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 import { adminAPI } from '../api/api';
 import toast from 'react-hot-toast';
 
@@ -270,54 +278,222 @@ function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Recent Activity */}
+        {/* Top Performers */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl shadow-lg p-6"
+          transition={{ delay: 0.3 }}
+          className="bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 border border-purple-100 rounded-2xl shadow-lg p-6"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Recent Activity
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Award className="w-6 h-6 text-purple-600" />
+            Top Performers 🏆
           </h2>
           <div className="space-y-4">
-            {recentActivity.length > 0 ? (
-              recentActivity.slice(0, 10).map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className={`px-3 py-1 rounded-lg text-xs font-medium ${getActionBadgeColor(activity.action)}`}>
-                      {activity.action}
+            {stats?.topPerformers && stats.topPerformers.length > 0 ? (
+              stats.topPerformers.map((performer, index) => {
+                const medals = ['🥇', '🥈', '🥉'];
+                return (
+                  <motion.div
+                    key={performer.userId}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`flex items-center justify-between p-4 rounded-xl border ${
+                      index === 0
+                        ? 'bg-yellow-50 border-yellow-200'
+                        : index === 1
+                        ? 'bg-gray-100 border-gray-300'
+                        : 'bg-orange-50 border-orange-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-3xl font-bold">{medals[index]}</span>
+                      <div>
+                        <p className="font-semibold text-gray-900">{performer.name}</p>
+                        <p className="text-sm text-gray-600">{performer.email}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.userName || 'Unknown User'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {activity.details || 'No details available'}
-                      </p>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-purple-600">{performer.completedCount}</p>
+                      <p className="text-xs text-gray-500">tasks completed</p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">
-                      {new Date(activity.timestamp).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))
+                  </motion.div>
+                );
+              })
             ) : (
               <div className="text-center py-8">
-                <Activity className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500">No recent activity</p>
+                <Award className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p className="text-gray-500">No completed tasks yet</p>
               </div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Analytics Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl shadow-lg p-6"
+        >
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-indigo-600" />
+            Analytics & Insights
+          </h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Task Status Distribution */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white rounded-xl shadow p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-bold text-gray-900">Task Status Distribution</h3>
+              </div>
+              {stats && (stats.tasks.completed > 0 || stats.tasks.pending > 0 || stats.tasks.inProgress > 0) ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Completed', value: stats.tasks.completed, color: '#10b981' },
+                        { name: 'In Progress', value: stats.tasks.inProgress, color: '#3b82f6' },
+                        { name: 'Pending', value: stats.tasks.pending, color: '#f59e0b' },
+                        { name: 'Overdue', value: stats.tasks.overdue, color: '#ef4444' },
+                      ].filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Completed', value: stats.tasks.completed, color: '#10b981' },
+                        { name: 'In Progress', value: stats.tasks.inProgress, color: '#3b82f6' },
+                        { name: 'Pending', value: stats.tasks.pending, color: '#f59e0b' },
+                        { name: 'Overdue', value: stats.tasks.overdue, color: '#ef4444' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[300px] text-gray-400">
+                  <div className="text-center">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No task data available</p>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Task Summary Bar Chart */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white rounded-xl shadow p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="w-5 h-5 text-yellow-600" />
+                <h3 className="text-lg font-bold text-gray-900">Task Summary</h3>
+              </div>
+              {stats && (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      { name: 'Total', value: stats.tasks.total },
+                      { name: 'Completed', value: stats.tasks.completed },
+                      { name: 'In Progress', value: stats.tasks.inProgress },
+                      { name: 'Pending', value: stats.tasks.pending },
+                      { name: 'Overdue', value: stats.tasks.overdue },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Additional Analytics Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Completion Rate */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl shadow p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-bold text-gray-900">Completion Overview</h3>
+              </div>
+              {stats && (
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Overall Completion Rate</span>
+                      <span className="text-lg font-bold text-green-600">{stats.tasks.completionRate}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stats.tasks.completionRate}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                    <div>
+                      <p className="text-sm text-gray-600">Created Today</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats.tasks.createdToday}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Created This Week</p>
+                      <p className="text-2xl font-bold text-purple-600">{stats.tasks.createdThisWeek}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+
+            {/* User Activity */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl shadow p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-bold text-gray-900">User Overview</h3>
+              </div>
+              {stats && (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart
+                    data={[
+                      { name: 'Total Users', value: stats.users.total, color: '#3b82f6' },
+                      { name: 'Active 24h', value: stats.users.active24h, color: '#10b981' },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </motion.div>
           </div>
         </motion.div>
       </div>

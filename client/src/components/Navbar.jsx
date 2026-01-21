@@ -42,17 +42,35 @@ function Navbar() {
           
           {/* Navigation Links */}
           <div className="flex items-center space-x-2">
-            <Link
-              to="/dashboard"
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                location.pathname === '/dashboard'
-                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-purple-100 hover:text-purple-700'
-              }`}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </Link>
+            {/* Admin Dashboard - Admin only (First) */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  location.pathname === '/admin'
+                    ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-orange-100 hover:text-orange-700'
+                }`}
+              >
+                <Shield className="h-4 w-4" />
+                Dashboard
+              </Link>
+            )}
+
+            {/* Dashboard link - show for non-admin */}
+            {!isAdmin && (
+              <Link
+                to="/dashboard"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  location.pathname === '/dashboard'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-purple-100 hover:text-purple-700'
+                }`}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Link>
+            )}
             <Link
               to="/tasks"
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
@@ -80,32 +98,24 @@ function Navbar() {
               </Link>
             )}
 
-            <Link
-              to="/analytics"
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                location.pathname === '/analytics'
-                  ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-teal-100 hover:text-teal-700'
-              }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </Link>
+            {/* Analytics - Hide for admin since it's in dashboard */}
+            {!isAdmin && (
+              <Link
+                to="/analytics"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  location.pathname === '/analytics'
+                    ? 'bg-gradient-to-r from-teal-500 to-green-500 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-teal-100 hover:text-teal-700'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </Link>
+            )}
             
             {/* Admin Menu - Admin only */}
             {isAdmin && (
               <>
-                <Link
-                  to="/admin"
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                    location.pathname === '/admin'
-                      ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
-                      : 'text-gray-600 hover:bg-orange-100 hover:text-orange-700'
-                  }`}
-                >
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Link>
                 <Link
                   to="/admin/users"
                   className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${

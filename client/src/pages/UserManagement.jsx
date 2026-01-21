@@ -10,6 +10,7 @@ import {
   UserCheck,
   UserX,
   Unlock,
+  Power,
 } from 'lucide-react';
 import { adminAPI } from '../api/api';
 import toast from 'react-hot-toast';
@@ -19,6 +20,12 @@ function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -28,7 +35,8 @@ function UserManagement() {
     try {
       setLoading(true);
       const response = await adminAPI.getAllUsers({ page: 1, limit: 100 });
-      setUsers(response.data.users || response.data || []);
+      const usersData = response.data.users || response.data || [];
+      setUsers(usersData);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -47,6 +55,52 @@ function UserManagement() {
         toast.error(error.response?.data?.message || 'Failed to unlock account');
       }
     }
+  };
+
+  const handleDeactivateUser = async (userId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Disable Employee',
+      message: 'Are you sure you want to disable this employee? They will not be able to login.',
+      onConfirm: async () => {
+        try {
+          console.log('Starting deactivate request for user:', userId);
+          const response = await adminAPI.deactivateUser(userId);
+          console.log('Deactivate response:', response);
+          toast.success('Employee disabled successfully');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+          await fetchUsers();
+        } catch (error) {
+          console.error('Deactivate error full:', error);
+          console.error('Error message:', error.message);
+          toast.error(error.message || 'Failed to disable employee');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        }
+      },
+    });
+  };
+
+  const handleActivateUser = async (userId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Enable Employee',
+      message: 'Are you sure you want to enable this employee?',
+      onConfirm: async () => {
+        try {
+          console.log('Starting activate request for user:', userId);
+          const response = await adminAPI.activateUser(userId);
+          console.log('Activate response:', response);
+          toast.success('Employee enabled successfully');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+          await fetchUsers();
+        } catch (error) {
+          console.error('Activate error full:', error);
+          console.error('Error message:', error.message);
+          toast.error(error.message || 'Failed to enable employee');
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+        }
+      },
+    });
   };
 
   const handleDeleteUser = async (userId) => {
@@ -90,6 +144,8 @@ function UserManagement() {
     switch(status) {
       case 'active':
         return 'bg-green-100 text-green-700 border-green-200';
+      case 'inactive':
+        return 'bg-red-100 text-red-700 border-red-200';
       case 'suspended':
         return 'bg-red-100 text-red-700 border-red-200';
       case 'pending':
@@ -101,8 +157,38 @@ function UserManagement() {
 
   return (
     <div className="min-h-screen p-6">
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">{confirmModal.title}</h2>
+            <p className="text-gray-600 mb-8 leading-relaxed">{confirmModal.message}</p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                }}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+              >
+                Yes, Confirm
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -302,10 +388,28 @@ function UserManagement() {
                               <Unlock className="w-4 h-4" />
                             </button>
                           )}
+                          {user.role !== 'admin' && user.isActive && (
+                            <button
+                              onClick={() => handleDeactivateUser(user._id)}
+                              className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Disable Employee"
+                            >
+                              <Power className="w-4 h-4" />
+                            </button>
+                          )}
+                          {user.role !== 'admin' && !user.isActive && (
+                            <button
+                              onClick={() => handleActivateUser(user._id)}
+                              className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Enable Employee"
+                            >
+                              <Power className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteUser(user._id)}
                             className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete User"
+                            title="Delete Employee"
                           >
                             <UserX className="w-4 h-4" />
                           </button>

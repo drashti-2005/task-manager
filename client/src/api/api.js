@@ -172,6 +172,14 @@ export const adminAPI = {
     fetchAPI(`/admin/users/${id}/unlock`, {
       method: 'POST',
     }),
+  deactivateUser: (id) =>
+    fetchAPI(`/admin/users/${id}/deactivate`, {
+      method: 'POST',
+    }),
+  activateUser: (id) =>
+    fetchAPI(`/admin/users/${id}/activate`, {
+      method: 'POST',
+    }),
 
   // Task Management
   getAllTasksAdmin: (params) => {
