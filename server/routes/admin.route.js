@@ -19,6 +19,8 @@ import {
   deleteUser,
   resetUserPassword,
   unlockUserAccount,
+  deactivateUser,
+  activateUser,
 } from '../controllers/adminUser.controller.js';
 
 import {
@@ -68,6 +70,8 @@ router.put('/users/:id', preventSelfRoleChange, updateUser);
 router.delete('/users/:id', rateLimitAdmin(5, 60000), deleteUser);
 router.post('/users/:id/reset-password', rateLimitAdmin(10, 60000), resetUserPassword);
 router.post('/users/:id/unlock', unlockUserAccount);
+router.post('/users/:id/deactivate', deactivateUser);
+router.post('/users/:id/activate', activateUser);
 
 // ======================
 // TASK MANAGEMENT ROUTES

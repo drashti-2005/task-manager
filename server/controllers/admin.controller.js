@@ -28,6 +28,7 @@ export const getDashboardStats = async (req, res) => {
       tasksCreatedToday,
       tasksCreatedThisWeek,
       recentActivity,
+      topPerformers,
     ] = await Promise.all([
       // Total users count
       User.countDocuments(),
@@ -66,6 +67,30 @@ export const getDashboardStats = async (req, res) => {
         .populate('performedBy', 'name email')
         .select('action performedBy createdAt status')
         .lean(),
+      
+      // Top 3 performing employees (most completed tasks)
+      Task.aggregate([
+        { $match: { status: 'completed', assignedTo: { $exists: true, $ne: null } } },
+        { $group: { _id: '$assignedTo', completedCount: { $sum: 1 } } },
+        { $sort: { completedCount: -1 } },
+        { $limit: 3 },
+        { $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'userDetails'
+          }
+        },
+        { $unwind: '$userDetails' },
+        { $project: {
+            _id: 0,
+            userId: '$_id',
+            name: '$userDetails.name',
+            email: '$userDetails.email',
+            completedCount: 1
+          }
+        }
+      ]),
     ]);
 
     // Calculate completion rate
@@ -90,6 +115,7 @@ export const getDashboardStats = async (req, res) => {
           createdThisWeek: tasksCreatedThisWeek,
           completionRate: parseFloat(completionRate),
         },
+        topPerformers: topPerformers,
         recentActivity,
       },
     });

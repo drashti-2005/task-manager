@@ -370,6 +370,89 @@ export const unlockUserAccount = async (req, res) => {
 };
 
 /**
+ * @desc    Deactivate user account
+ * @route   POST /api/admin/users/:id/deactivate
+ * @access  Private/Admin
+ */
+export const deactivateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Prevent deactivating own account
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot deactivate your own account',
+      });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot deactivate admin accounts',
+      });
+    }
+
+    user.isActive = false;
+    user.accountStatus = 'inactive';
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'User deactivated successfully',
+      data: user,
+    });
+  } catch (error) {
+    console.error('Deactivate error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * @desc    Activate user account
+ * @route   POST /api/admin/users/:id/activate
+ * @access  Private/Admin
+ */
+export const activateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    user.isActive = true;
+    user.accountStatus = 'active';
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'User activated successfully',
+      data: user,
+    });
+  } catch (error) {
+    console.error('Activate error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
  * @desc    Create new user (Admin)
  * @route   POST /api/admin/users
  * @access  Private/Admin
@@ -428,5 +511,7 @@ export default {
   deleteUser,
   resetUserPassword,
   unlockUserAccount,
+  deactivateUser,
+  activateUser,
   createUser,
 };
