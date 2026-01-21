@@ -667,7 +667,7 @@ function TaskManagement() {
                         <option value="">Select Team</option>
                         {teams.map(team => (
                           <option key={team._id} value={team._id}>
-                            {team.name} ({team.members?.length || 0} members)
+                            {team.name} - {team.members?.map(m => m.name || m.email).join(', ') || 'No members'}
                           </option>
                         ))}
                       </select>
