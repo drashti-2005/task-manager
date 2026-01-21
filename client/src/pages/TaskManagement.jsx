@@ -4,6 +4,7 @@ import { taskAPI } from '../api/api';
 import TaskDialog from '../components/TaskDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 function TaskManagement() {
   const { hasManagerAccess, isUser } = useAuth();
@@ -182,9 +183,11 @@ function TaskManagement() {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
         await taskAPI.deleteTask(id);
+        toast.success('Task deleted successfully');
         fetchTasks();
       } catch (error) {
         console.error('Error deleting task:', error);
+        toast.error(error.message || 'Failed to delete task');
       }
     }
   };
@@ -468,15 +471,13 @@ function TaskManagement() {
                       <Edit2 className="h-4 w-4" />
                       Edit
                     </button>
-                    {hasManagerAccess && (
-                      <button
-                        onClick={() => handleDelete(task._id)}
-                        className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1 transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDelete(task._id)}
+                      className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1 transition"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))

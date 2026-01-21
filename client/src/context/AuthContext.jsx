@@ -60,6 +60,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="h-12 w-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   const value = {
     user,
     loading,

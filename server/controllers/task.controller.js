@@ -313,17 +313,9 @@ export const updateTaskStatus = async (req, res) => {
 
 // @desc    Delete task
 // @route   DELETE /api/tasks/:id
-// @access  Private (Manager only)
+// @access  Private
 export const deleteTask = async (req, res) => {
   try {
-    // Only managers can delete tasks
-    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only managers can delete tasks',
-      });
-    }
-    
     const task = await Task.findById(req.params.id);
     
     if (!task) {
@@ -331,6 +323,21 @@ export const deleteTask = async (req, res) => {
         success: false,
         message: 'Task not found',
       });
+    }
+
+    // Check if user has permission to delete
+    // Manager/Admin can delete any task
+    // User can delete only their own tasks or tasks assigned to them
+    if (req.user.role === 'user') {
+      const isCreator = task.createdBy && task.createdBy.toString() === req.user.id.toString();
+      const isAssignedToUser = task.assignedTo && task.assignedTo.toString() === req.user.id.toString();
+      
+      if (!isCreator && !isAssignedToUser) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only delete your own tasks',
+        });
+      }
     }
     
     await Task.findByIdAndDelete(req.params.id);
