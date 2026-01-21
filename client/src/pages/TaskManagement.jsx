@@ -232,16 +232,13 @@ function TaskManagement() {
           <ListTodo className="h-8 w-8 text-purple-500" />
           {isUser ? 'My Tasks' : 'Task Management'}
         </h1>
-        {/* Only managers can create new tasks */}
-        {hasManagerAccess && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            New Task
-          </button>
-        )}
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+        >
+          <Plus className="h-5 w-5" />
+          New Task
+        </button>
       </div>
 
       {/* Search and Filter Section */}
