@@ -15,9 +15,20 @@ import ActivityLogs from './pages/ActivityLogs';
 import Analytics from './pages/Analytics';
 import Teams from './pages/Teams';
 
+// Loading Component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-screen">
+    <div className="h-12 w-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
   
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -28,13 +39,17 @@ const ProtectedRoute = ({ children }) => {
 
 // Admin Route Component
 const AdminRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
   
   if (!user) {
     return <Navigate to="/login" replace />;
   }
   
-  if (user.role !== 'admin') {
+  if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
   
@@ -43,7 +58,11 @@ const AdminRoute = ({ children }) => {
 
 // Public Route Component (redirect to dashboard if already logged in)
 const PublicRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
   
   if (user) {
     return <Navigate to="/dashboard" replace />;
@@ -74,19 +93,47 @@ function AppRoutes() {
         </ProtectedRoute>
       }>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="tasks" element={<TaskManagement />} />
-        <Route path="teams" element={<Teams />} />
-        <Route path="analytics" element={<Analytics />} />
+        <Route path="dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="tasks" element={
+          <ProtectedRoute>
+            <TaskManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="teams" element={
+          <ProtectedRoute>
+            <Teams />
+          </ProtectedRoute>
+        } />
+        <Route path="analytics" element={
+          <ProtectedRoute>
+            <Analytics />
+          </ProtectedRoute>
+        } />
         
         {/* Admin Routes */}
-        <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
-        <Route path="admin/activity-logs" element={<AdminRoute><ActivityLogs /></AdminRoute>} />
+        <Route path="admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        } />
+        <Route path="admin/users" element={
+          <AdminRoute>
+            <UserManagement />
+          </AdminRoute>
+        } />
+        <Route path="admin/activity-logs" element={
+          <AdminRoute>
+            <ActivityLogs />
+          </AdminRoute>
+        } />
       </Route>
 
-      {/* 404 Route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 Route - Redirect unauthorized users to login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
