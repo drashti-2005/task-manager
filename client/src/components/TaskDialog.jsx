@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function TaskDialog({ 
   showModal, 
@@ -10,8 +10,42 @@ function TaskDialog({
   handleSubmit, 
   handleInputChange 
 }) {
-  
+  const [dateError, setDateError] = useState('');
+
+  // Date validation helper function
+  const validateDates = (startDate, dueDate) => {
+    if (!startDate && !dueDate) {
+      return { isValid: true, error: '' };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Validate startDate is not in the past
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      if (start < today) {
+        return { isValid: false, error: 'Start date cannot be in the past' };
+      }
+    }
+
+    // Validate dueDate is after startDate
+    if (startDate && dueDate) {
+      const start = new Date(startDate);
+      const due = new Date(dueDate);
+      
+      if (due <= start) {
+        return { isValid: false, error: 'Due date must be after start date' };
+      }
+    }
+
+    return { isValid: true, error: '' };
+  };
+
   const closeModal = () => {
+    setDateError('');
     setShowModal(false);
     setEditingTask(null);
     setFormData({
@@ -23,6 +57,27 @@ function TaskDialog({
       dueDate: '',
       tags: [],
     });
+  };
+
+  // Wrap handleSubmit with date validation
+  const onSubmitWithValidation = (e) => {
+    e.preventDefault();
+    
+    const validation = validateDates(formData.startDate, formData.dueDate);
+    
+    if (!validation.isValid) {
+      setDateError(validation.error);
+      return;
+    }
+    
+    setDateError('');
+    handleSubmit(e);
+  };
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
   };
 
   if (!showModal) return null;
@@ -44,7 +99,13 @@ function TaskDialog({
           {editingTask ? 'Edit Task' : 'New Task'}
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4" onClick={(e) => e.stopPropagation()}>
+        {dateError && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {dateError}
+          </div>
+        )}
+        
+        <form onSubmit={onSubmitWithValidation} className="space-y-4" onClick={(e) => e.stopPropagation()}>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Title
@@ -124,6 +185,7 @@ function TaskDialog({
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleInputChange}
+                min={getTodayDate()}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 style={{ backgroundColor: 'white', color: 'black' }}
               />
@@ -138,6 +200,7 @@ function TaskDialog({
                 name="dueDate"
                 value={formData.dueDate}
                 onChange={handleInputChange}
+                min={formData.startDate || getTodayDate()}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 style={{ backgroundColor: 'white', color: 'black' }}
               />

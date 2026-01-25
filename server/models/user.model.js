@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['manager', 'admin', 'employee','user'],
+    enum: ['manager', 'admin','user'],
     default: 'user',
     index: true,
   },
@@ -58,6 +58,14 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     trim: true,
+  },
+  // Password reset token
+  resetPasswordToken: {
+    type: String,
+  },
+  // Reset token expiration
+  resetPasswordExpire: {
+    type: Date,
   },
 }, {
   timestamps: true,

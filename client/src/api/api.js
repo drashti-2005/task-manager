@@ -54,6 +54,18 @@ export const authAPI = {
       body: JSON.stringify(userData),
     }),
   
+  forgotPassword: (data) =>
+    fetchAPI('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
+  resetPassword: (data) =>
+    fetchAPI('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
   getCurrentUser: () => fetchAPI('/auth/me'),
   
   logout: () => 

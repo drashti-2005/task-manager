@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { connectDB } from './utils/db.utils.js';
+import { testEmailConfig } from './utils/email.utils.js';
 
 // Import routes
 import authRoutes from './routes/auth.route.js';
@@ -62,7 +63,10 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Test email configuration
+  await testEmailConfig();
 });

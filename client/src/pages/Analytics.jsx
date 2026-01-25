@@ -137,7 +137,7 @@ function Analytics() {
     },
     {
       title: 'Completion Rate',
-      value: `${overview?.completionRate || 0}%`,
+      value: `${(overview?.completionRate || 0).toFixed(2)}%`,
       icon: Target,
       bgGradient: 'from-blue-50 to-cyan-50',
       borderColor: 'border-blue-100',
@@ -147,7 +147,7 @@ function Analytics() {
     },
     {
       title: 'Avg. Completion Time',
-      value: `${timeAnalysis?.avgCompletionTimeHours?.toFixed(1) || 0}h`,
+      value: `${(timeAnalysis?.avgCompletionTimeHours || 0).toFixed(2)}h`,
       icon: Clock,
       bgGradient: 'from-orange-50 to-amber-50',
       borderColor: 'border-orange-100',

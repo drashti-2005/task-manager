@@ -219,6 +219,14 @@ function LoginPage() {
                     )}
                   </button>
                 </div>
+                <div className="text-right mt-2">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-semibold text-purple-600 hover:text-purple-700 transition duration-200"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
               </motion.div>
             </div>
 

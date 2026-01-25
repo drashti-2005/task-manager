@@ -7,6 +7,8 @@ import Layout from './components/Layout';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import TaskManagement from './pages/TaskManagement';
 import AdminDashboard from './pages/AdminDashboard';
@@ -85,6 +87,8 @@ function AppRoutes() {
           <RegisterPage />
         </PublicRoute>
       } />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Protected Routes */}
       <Route path="/" element={
