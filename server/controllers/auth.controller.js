@@ -63,10 +63,18 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email and password',
+      });
+    }
+
     // Check for user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      // Log failed login attempt (create temp user ID from email hash for logging)
+      // Don't log failed login for non-existent users to avoid spam
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',

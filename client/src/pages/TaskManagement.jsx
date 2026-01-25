@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
-import { ListTodo, Plus, Edit2, Trash2, X, Search, Filter, Calendar, UserPlus, Users } from 'lucide-react';
+import { ListTodo, Plus, Edit2, Trash2, X, Search, Filter, Calendar, UserPlus, Users, FolderPlus, Folder, Pencil, LayoutGrid, List } from 'lucide-react';
+import { createWorkspace, getWorkspaces, deleteWorkspace, updateWorkspace } from '../api/workspace.api';
 import { taskAPI } from '../api/api';
 import TaskDialog from '../components/TaskDialog';
 import { useDebounce } from '../hooks/useDebounce';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 function TaskManagement() {
+  // View state
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'board'
+  
+  // Workspace state
+  const [workspaces, setWorkspaces] = useState([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('');
+  const [workspaceDescription, setWorkspaceDescription] = useState('');
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState('');
+  const [renamingWorkspace, setRenamingWorkspace] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [draggedTask, setDraggedTask] = useState(null);
+  const [dragOverWorkspace, setDragOverWorkspace] = useState(null);
+
   const { hasManagerAccess, isUser } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]); // Available users for assignment
@@ -27,6 +47,7 @@ function TaskManagement() {
     assignedTo: '', // For individual assignment
     assignedToTeam: '', // For team assignment
     assignmentType: 'self', // 'self', 'individual', 'team'
+    workspace: '', // Add workspace field
   });
 
   // Search and Filter States
@@ -43,13 +64,151 @@ function TaskManagement() {
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
+    fetchWorkspaces();
     fetchTasks();
     // Fetch users and teams for assignment if user is manager
     if (hasManagerAccess) {
       fetchUsers();
       fetchTeams();
     }
-  }, [debouncedSearchQuery, filters, hasManagerAccess]);
+  }, [debouncedSearchQuery, filters, hasManagerAccess, selectedWorkspace]);
+
+  const fetchWorkspaces = async () => {
+    try {
+      const data = await getWorkspaces();
+      setWorkspaces(data || []);
+    } catch (error) {
+      console.error('Error fetching workspaces:', error);
+    }
+  };
+
+  const handleCreateWorkspace = async (e) => {
+    e.preventDefault();
+    setWorkspaceLoading(true);
+    setWorkspaceError('');
+    try {
+      await createWorkspace({ name: workspaceName, description: workspaceDescription });
+      setWorkspaceName('');
+      setWorkspaceDescription('');
+      setShowWorkspaceModal(false);
+      fetchWorkspaces();
+      toast.success('Workspace created!');
+    } catch (err) {
+      setWorkspaceError(err.message || 'Failed to create workspace');
+    }
+    setWorkspaceLoading(false);
+  };
+
+  const handleDeleteWorkspace = async (id) => {
+    if (!window.confirm('Delete this workspace? This will not delete tasks.')) return;
+    try {
+      await deleteWorkspace(id);
+      if (selectedWorkspace?._id === id) {
+        setSelectedWorkspace(null);
+      }
+      fetchWorkspaces();
+      toast.success('Workspace deleted!');
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete workspace');
+    }
+  };
+
+  const handleWorkspaceClick = (workspace) => {
+    if (selectedWorkspace?._id === workspace._id) {
+      setSelectedWorkspace(null); // Deselect if clicking the same workspace
+    } else {
+      setSelectedWorkspace(workspace);
+    }
+  };
+
+  const handleCreateTaskInWorkspace = (workspace) => {
+    setSelectedWorkspace(workspace);
+    setFormData({
+      ...formData,
+      workspace: workspace._id,
+    });
+    setShowModal(true);
+  };
+
+  const handleStartRename = (e, workspace) => {
+    e.stopPropagation();
+    setRenamingWorkspace(workspace._id);
+    setRenameValue(workspace.name);
+  };
+
+  const handleCancelRename = () => {
+    setRenamingWorkspace(null);
+    setRenameValue('');
+  };
+
+  const handleSaveRename = async (e, workspaceId) => {
+    e.stopPropagation();
+    if (!renameValue.trim()) {
+      toast.error('Workspace name cannot be empty');
+      return;
+    }
+    try {
+      await updateWorkspace(workspaceId, { name: renameValue });
+      setRenamingWorkspace(null);
+      setRenameValue('');
+      fetchWorkspaces();
+      toast.success('Workspace renamed!');
+    } catch (error) {
+      toast.error(error.message || 'Failed to rename workspace');
+    }
+  };
+
+  // Drag and drop handlers for moving tasks to workspaces
+  const handleTaskDragStart = (e, task) => {
+    setDraggedTask(task);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target);
+  };
+
+  const handleWorkspaceDragOver = (e, workspace) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverWorkspace(workspace?._id || 'none');
+  };
+
+  const handleWorkspaceDragLeave = (e) => {
+    e.preventDefault();
+    setDragOverWorkspace(null);
+  };
+
+  const handleWorkspaceDrop = async (e, workspace) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverWorkspace(null);
+    
+    if (!draggedTask) return;
+
+    const targetWorkspaceId = workspace ? workspace._id : null;
+    const currentWorkspaceId = draggedTask.workspace?._id || draggedTask.workspace;
+
+    // Don't update if dropping on the same workspace
+    if (targetWorkspaceId === currentWorkspaceId) {
+      setDraggedTask(null);
+      return;
+    }
+
+    try {
+      const updateData = { ...draggedTask };
+      if (workspace) {
+        updateData.workspace = workspace._id;
+      } else {
+        updateData.workspace = null;
+      }
+
+      await taskAPI.updateTask(draggedTask._id, updateData);
+      toast.success(`Task moved to ${workspace ? workspace.name : 'common area'}!`);
+      fetchTasks();
+    } catch (error) {
+      toast.error(error.message || 'Failed to move task');
+    }
+    
+    setDraggedTask(null);
+  };
 
   const fetchUsers = async () => {
     try {
@@ -73,23 +232,26 @@ function TaskManagement() {
     try {
       setLoading(true);
       
-      // If search or filters are active, use search endpoint
-      if (debouncedSearchQuery || filters.priority || filters.status || filters.startDate || filters.endDate) {
-        const params = {
-          ...(debouncedSearchQuery && { q: debouncedSearchQuery }),
-          ...(filters.priority && { priority: filters.priority }),
-          ...(filters.status && { status: filters.status }),
-          ...(filters.startDate && { startDate: filters.startDate }),
-          ...(filters.endDate && { endDate: filters.endDate }),
-        };
-        
-        const response = await taskAPI.searchTasks(params);
-        setTasks(response.data);
+      // Build params
+      const params = {
+        ...(debouncedSearchQuery && { q: debouncedSearchQuery }),
+        ...(filters.priority && { priority: filters.priority }),
+        ...(filters.status && { status: filters.status }),
+        ...(filters.startDate && { startDate: filters.startDate }),
+        ...(filters.endDate && { endDate: filters.endDate }),
+      };
+      
+      // If a workspace is selected, only show tasks from that workspace
+      if (selectedWorkspace) {
+        params.workspace = selectedWorkspace._id;
       } else {
-        // Otherwise, use regular getAllTasks
-        const tasks = await taskAPI.getAllTasks();
-        setTasks(tasks);
+        // If no workspace is selected, show only common tasks (tasks without workspace)
+        params.workspace = 'none';
       }
+      
+      // Use search endpoint with workspace filter
+      const response = await taskAPI.searchTasks(params);
+      setTasks(response.data || []);
       
       setLoading(false);
     } catch (error) {
@@ -119,10 +281,20 @@ function TaskManagement() {
     e.preventDefault();
     
     try {
+      // Create task data, only include workspace if one is selected
+      const taskData = {
+        ...formData,
+      };
+      
+      // If no workspace selected or creating common task, don't include workspace field
+      if (!selectedWorkspace || !formData.workspace) {
+        delete taskData.workspace;
+      }
+      
       if (editingTask) {
-        await taskAPI.updateTask(editingTask._id, formData);
+        await taskAPI.updateTask(editingTask._id, taskData);
       } else {
-        await taskAPI.createTask(formData);
+        await taskAPI.createTask(taskData);
       }
       
       setShowModal(false);
@@ -138,6 +310,7 @@ function TaskManagement() {
         assignedTo: '',
         assignedToTeam: '',
         assignmentType: 'self',
+        workspace: '',
       });
       fetchTasks();
     } catch (error) {
@@ -196,8 +369,33 @@ function TaskManagement() {
     try {
       await taskAPI.updateTaskStatus(id, newStatus);
       fetchTasks();
+      toast.success('Task status updated!');
     } catch (error) {
       console.error('Error updating task status:', error);
+      toast.error('Failed to update task status');
+    }
+  };
+
+  // Drag and drop handlers
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const taskId = active.id;
+    const newStatus = over.id;
+    
+    // Update task status
+    if (newStatus && ['pending', 'in-progress', 'completed'].includes(newStatus)) {
+      await handleStatusChange(taskId, newStatus);
     }
   };
 
@@ -220,6 +418,117 @@ function TaskManagement() {
 
   const hasActiveFilters = searchQuery || filters.priority || filters.status || filters.startDate || filters.endDate;
 
+  // Draggable Task Card Component
+  const TaskCard = ({ task }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: task._id,
+    });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    const priorityColors = {
+      low: 'bg-green-100 text-green-700 border-green-300',
+      medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      high: 'bg-red-100 text-red-700 border-red-300',
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="bg-white rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow border-2 border-purple-100 cursor-grab active:cursor-grabbing"
+      >
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="font-semibold text-gray-800 flex-1">{task.title}</h3>
+          <div className="flex gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(task);
+              }}
+              className="text-blue-500 hover:text-blue-700 p-1"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+            {hasManagerAccess && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(task._id);
+                }}
+                className="text-red-500 hover:text-red-700 p-1"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        {task.description && (
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+        )}
+        <div className="flex items-center justify-between">
+          <span className={`text-xs px-2 py-1 rounded-full border ${priorityColors[task.priority]}`}>
+            {task.priority}
+          </span>
+          {task.dueDate && (
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {new Date(task.dueDate).toLocaleDateString()}
+            </span>
+          )}
+        </div>
+        {task.tags && task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {task.tags.map((tag, idx) => (
+              <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Kanban Column Component
+  const KanbanColumn = ({ status, title, tasks, colorClass }) => {
+    const taskIds = tasks.map(t => t._id);
+
+    return (
+      <div className="flex-1 min-w-[300px]">
+        <div className={`${colorClass} rounded-t-lg p-3 border-2 border-b-0`}>
+          <h3 className="font-bold text-white text-center flex items-center justify-center gap-2">
+            {title}
+            <span className="bg-white/30 px-2 py-0.5 rounded-full text-sm">
+              {tasks.length}
+            </span>
+          </h3>
+        </div>
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          <div 
+            id={status}
+            className="bg-gray-50 rounded-b-lg p-4 min-h-[500px] border-2 border-t-0 space-y-3"
+          >
+            {tasks.map(task => (
+              <TaskCard key={task._id} task={task} />
+            ))}
+            {tasks.length === 0 && (
+              <div className="text-center text-gray-400 py-8">
+                No tasks
+              </div>
+            )}
+          </div>
+        </SortableContext>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -235,14 +544,243 @@ function TaskManagement() {
           <ListTodo className="h-8 w-8 text-purple-500" />
           {isUser ? 'My Tasks' : 'Task Management'}
         </h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
-        >
-          <Plus className="h-5 w-5" />
-          New Task
-        </button>
+        <div className="flex gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-gray-200 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
+                viewMode === 'list'
+                  ? 'bg-white text-purple-600 shadow'
+                  : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              <List className="h-4 w-4" />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('board')}
+              className={`px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
+                viewMode === 'board'
+                  ? 'bg-white text-purple-600 shadow'
+                  : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Board
+            </button>
+          </div>
+          
+          <button
+            onClick={() => setShowWorkspaceModal(true)}
+            className="bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg font-semibold transition duration-300 shadow flex items-center gap-2"
+          >
+            <FolderPlus className="h-5 w-5" />
+            Workspace
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            New Task
+          </button>
+        </div>
       </div>
+      {/* Workspace Creation Modal */}
+      {showWorkspaceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs border-2 border-purple-200">
+            <h2 className="text-lg font-bold mb-2 bg-gradient-to-r from-fuchsia-500 to-purple-500 bg-clip-text text-transparent">Create Workspace</h2>
+            <form onSubmit={handleCreateWorkspace}>
+              <input
+                type="text"
+                placeholder="Workspace name"
+                value={workspaceName}
+                onChange={e => setWorkspaceName(e.target.value)}
+                required
+                className="w-full mb-2 p-2 border border-purple-200 rounded"
+              />
+              {workspaceError && <div className="text-red-500 mb-2">{workspaceError}</div>}
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowWorkspaceModal(false)}
+                  className="px-3 py-1 rounded border border-purple-200 text-sm"
+                  disabled={workspaceLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white px-3 py-1 rounded font-semibold text-sm"
+                  disabled={workspaceLoading}
+                >
+                  {workspaceLoading ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Workspace Folders Section */}
+      {workspaces.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-100">
+          <h2 className="text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
+            <Folder className="h-5 w-5" />
+            Workspaces
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* Common Area Drop Zone */}
+            <div
+              onDragOver={(e) => handleWorkspaceDragOver(e, null)}
+              onDragLeave={handleWorkspaceDragLeave}
+              onDrop={(e) => handleWorkspaceDrop(e, null)}
+              className={`relative group cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100 border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${
+                dragOverWorkspace === 'none'
+                  ? 'border-green-500 bg-green-50 shadow-lg scale-105'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+              title="Drop here to move task to common area (no workspace)"
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Folder className="h-10 w-10 text-gray-400 group-hover:text-gray-500" />
+                <span className="text-sm font-semibold text-gray-700 text-center">
+                  Common Tasks
+                </span>
+              </div>
+              {dragOverWorkspace === 'none' && (
+                <div className="absolute inset-0 border-2 border-dashed border-green-500 rounded-xl bg-green-50 bg-opacity-50 flex items-center justify-center">
+                  <span className="text-green-700 font-bold text-xs">Drop Here</span>
+                </div>
+              )}
+            </div>
+
+            {workspaces.map(workspace => (
+              <div
+                key={workspace._id}
+                onClick={() => handleWorkspaceClick(workspace)}
+                onDragOver={(e) => handleWorkspaceDragOver(e, workspace)}
+                onDragLeave={handleWorkspaceDragLeave}
+                onDrop={(e) => handleWorkspaceDrop(e, workspace)}
+                className={`relative group cursor-pointer bg-gradient-to-br from-purple-50 to-fuchsia-50 border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-lg ${
+                  dragOverWorkspace === workspace._id
+                    ? 'border-green-500 bg-green-50 shadow-lg scale-105'
+                    : selectedWorkspace?._id === workspace._id
+                    ? 'border-purple-500 shadow-lg scale-105'
+                    : 'border-purple-200 hover:border-purple-400'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Folder 
+                    className={`h-10 w-10 ${
+                      selectedWorkspace?._id === workspace._id 
+                        ? 'text-purple-600' 
+                        : 'text-purple-400 group-hover:text-purple-500'
+                    }`} 
+                  />
+                  {renamingWorkspace === workspace._id ? (
+                    <div className="w-full" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveRename(e, workspace._id);
+                          if (e.key === 'Escape') handleCancelRename();
+                        }}
+                        className="w-full text-sm font-semibold text-purple-700 text-center border-2 border-purple-400 rounded px-1 py-0.5"
+                        autoFocus
+                      />
+                      <div className="flex gap-1 mt-1 justify-center">
+                        <button
+                          onClick={(e) => handleSaveRename(e, workspace._id)}
+                          className="text-xs bg-green-500 text-white px-2 py-0.5 rounded"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelRename();
+                          }}
+                          className="text-xs bg-gray-400 text-white px-2 py-0.5 rounded"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-semibold text-purple-700 text-center line-clamp-2">
+                      {workspace.name}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateTaskInWorkspace(workspace);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded-full shadow-lg transition"
+                    title="Create task in this workspace"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={(e) => handleStartRename(e, workspace)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white p-1.5 rounded-full shadow-lg transition"
+                    title="Rename workspace"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteWorkspace(workspace._id);
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-lg transition"
+                    title="Delete workspace"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+                
+                {/* Selected Indicator */}
+                {selectedWorkspace?._id === workspace._id && (
+                  <div className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    ✓
+                  </div>
+                )}
+                
+                {/* Drop Zone Indicator */}
+                {dragOverWorkspace === workspace._id && (
+                  <div className="absolute inset-0 border-2 border-dashed border-green-500 rounded-xl bg-green-50 bg-opacity-50 flex items-center justify-center pointer-events-none">
+                    <span className="text-green-700 font-bold text-xs">Drop Here</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {selectedWorkspace && (
+            <div className="mt-4 p-3 bg-purple-100 border-2 border-purple-300 rounded-lg flex items-center justify-between">
+              <span className="text-sm font-semibold text-purple-700">
+                Showing tasks from: <span className="text-purple-900">{selectedWorkspace.name}</span>
+              </span>
+              <button
+                onClick={() => setSelectedWorkspace(null)}
+                className="text-purple-700 hover:text-purple-900 font-semibold text-sm flex items-center gap-1"
+              >
+                <X className="h-4 w-4" />
+                Show All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search and Filter Section */}
       <div
@@ -350,141 +888,168 @@ function TaskManagement() {
         </div>
       </div>
 
-      {/* Tasks Table */}
-      <div
-        className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-purple-100"
-      >
-        <table className="min-w-full divide-y divide-purple-100">
-          <thead className="bg-gradient-to-r from-purple-100 via-blue-100 to-teal-100">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                Task
-              </th>
-              {hasManagerAccess && (
-                <th className="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
-                  Assigned To
-                </th>
-              )}
-              <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-teal-700 uppercase tracking-wider">
-                Priority
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                Start Date
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-teal-700 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-purple-50">
-            {tasks.length === 0 ? (
+      {/* Tasks View - Board or List */}
+      {viewMode === 'board' ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            <KanbanColumn
+              status="pending"
+              title="📋 Pending"
+              tasks={tasks.filter(t => t.status === 'pending')}
+              colorClass="bg-gradient-to-r from-yellow-400 to-orange-500"
+            />
+            <KanbanColumn
+              status="in-progress"
+              title="🔄 In Progress"
+              tasks={tasks.filter(t => t.status === 'in-progress')}
+              colorClass="bg-gradient-to-r from-blue-400 to-indigo-500"
+            />
+            <KanbanColumn
+              status="completed"
+              title="✅ Completed"
+              tasks={tasks.filter(t => t.status === 'completed')}
+              colorClass="bg-gradient-to-r from-green-400 to-teal-500"
+            />
+          </div>
+        </DndContext>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-purple-100">
+          <table className="min-w-full divide-y divide-purple-100">
+            <thead className="bg-gradient-to-r from-purple-100 via-blue-100 to-teal-100">
               <tr>
-                <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                  <div className="flex flex-col items-center gap-2">
-                    <ListTodo className="h-12 w-12 text-purple-300" />
-                    <p>No tasks found. Create your first task!</p>
-                  </div>
-                </td>
+                <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                  Task
+                </th>
+                {hasManagerAccess && (
+                  <th className="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
+                    Assigned To
+                  </th>
+                )}
+                <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-teal-700 uppercase tracking-wider">
+                  Priority
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
+                  Start Date
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-teal-700 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              tasks.map((task, index) => (
-                <tr
-                  key={task._id}
-                  className="hover:bg-purple-50 hover:shadow-md transition-all duration-200"
-                >
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-semibold text-gray-800">{task.title}</div>
-                    <div className="text-sm text-gray-600">{task.description}</div>
-                  </td>
-                  {hasManagerAccess && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm">
-                          {task.assignmentType === 'team' ? (
-                            <>
-                              <div className="flex items-center gap-1 font-semibold text-blue-700">
-                                <Users className="h-4 w-4" />
-                                {task.assignedToTeam?.name || 'Team'}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {task.assignedToTeam?.members?.length || 0} members
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className="font-semibold text-gray-800">{task.assignedTo?.name || 'Self'}</div>
-                              <div className="text-xs text-gray-500">{task.assignedTo?.email || ''}</div>
-                            </>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleReassign(task)}
-                          className="text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-50 transition"
-                          title="Reassign task"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={task.status}
-                      onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border-2 transition-all duration-200 ${
-                        task.status === 'completed' ? 'bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 border-teal-300' :
-                        task.status === 'in-progress' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300' :
-                        'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300'
-                      }`}
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md ${
-                      task.priority === 'high' ? 'bg-gradient-to-r from-red-400 to-red-500 text-white' :
-                      task.priority === 'medium' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' :
-                      'bg-gradient-to-r from-green-400 to-green-500 text-white'
-                    }`}>
-                      {task.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                    {task.startDate ? new Date(task.startDate).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                    {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => handleEdit(task)}
-                      className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 transition"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(task._id)}
-                      className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1 transition"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </button>
+            </thead>
+            <tbody className="bg-white divide-y divide-purple-50">
+              {tasks.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <ListTodo className="h-12 w-12 text-purple-300" />
+                      <p>No tasks found. Create your first task!</p>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                tasks.map((task, index) => (
+                  <tr
+                    key={task._id}
+                    draggable="true"
+                    onDragStart={(e) => handleTaskDragStart(e, task)}
+                    onDragEnd={() => setDraggedTask(null)}
+                    className="hover:bg-purple-50 hover:shadow-md transition-all duration-200 cursor-move"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-semibold text-gray-800">{task.title}</div>
+                      <div className="text-sm text-gray-600">{task.description}</div>
+                    </td>
+                    {hasManagerAccess && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm">
+                            {task.assignmentType === 'team' ? (
+                              <>
+                                <div className="flex items-center gap-1 font-semibold text-blue-700">
+                                  <Users className="h-4 w-4" />
+                                  {task.assignedToTeam?.name || 'Team'}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {task.assignedToTeam?.members?.length || 0} members
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="font-semibold text-gray-800">{task.assignedTo?.name || 'Self'}</div>
+                                <div className="text-xs text-gray-500">{task.assignedTo?.email || ''}</div>
+                              </>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleReassign(task)}
+                            className="text-indigo-600 hover:text-indigo-800 p-1 rounded hover:bg-indigo-50 transition"
+                            title="Reassign task"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <select
+                        value={task.status}
+                        onChange={(e) => handleStatusChange(task._id, e.target.value)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer border-2 transition-all duration-200 ${
+                          task.status === 'completed' ? 'bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 border-teal-300' :
+                          task.status === 'in-progress' ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300' :
+                          'bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 border-yellow-300'
+                        }`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-4 py-2 rounded-xl text-xs font-bold shadow-md ${
+                        task.priority === 'high' ? 'bg-gradient-to-r from-red-400 to-red-500 text-white' :
+                        task.priority === 'medium' ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' :
+                        'bg-gradient-to-r from-green-400 to-green-500 text-white'
+                      }`}>
+                        {task.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                      {task.startDate ? new Date(task.startDate).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                      {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => handleEdit(task)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 transition"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(task._id)}
+                        className="text-red-600 hover:text-red-800 font-semibold inline-flex items-center gap-1 transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {/* Tasks Table */}
 
       {/* Modal */}
       {showModal && (

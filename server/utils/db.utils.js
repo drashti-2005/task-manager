@@ -2,13 +2,19 @@ import mongoose from 'mongoose';
 
 export const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+    
+    if (!mongoURI) {
+      throw new Error('MongoDB URI is not defined in environment variables');
+    }
+    
+    const conn = await mongoose.connect(mongoURI);
     
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
     console.log('⚠️  Server will run without database connection');
-    console.log('📝 Please install MongoDB or use MongoDB Atlas for full functionality');
+    console.log('📝 Please check your MONGODB_URI in .env file');
     // Don't exit - allow server to start for testing
   }
 };

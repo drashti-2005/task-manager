@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const taskSchema = new mongoose.Schema({
+    workspace: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Workspace',
+      required: false
+    },
   title: {
     type: String,
     required: [true, 'Task title is required'],

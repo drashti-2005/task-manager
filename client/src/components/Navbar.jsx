@@ -112,7 +112,7 @@ function Navbar() {
                 Analytics
               </Link>
             )}
-            
+
             {/* Admin Menu - Admin only */}
             {isAdmin && (
               <>

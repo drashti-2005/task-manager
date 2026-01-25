@@ -10,6 +10,7 @@ import userRoutes from './routes/user.route.js';
 import adminRoutes from './routes/admin.route.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import teamRoutes from './routes/team.route.js';
+import workspaceRoutes from './routes/workspace.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/workspaces', workspaceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

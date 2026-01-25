@@ -131,7 +131,7 @@ function Dashboard() {
         >
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Welcome back, {user?.name}! 👋
+              Welcome , {user?.name}! 👋
             </h1>
             <p className="text-gray-600 mt-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />

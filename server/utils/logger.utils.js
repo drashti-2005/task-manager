@@ -89,14 +89,19 @@ const determineActionType = (req) => {
  * @param {Boolean} success - Whether login was successful
  */
 export const logLogin = async (userId, req, success = true, errorMessage = null) => {
-  return await createActivityLog({
-    action: success ? 'USER_LOGIN' : 'LOGIN_FAILED',
-    performedBy: userId,
-    status: success ? 'success' : 'failed',
-    errorMessage,
-    ipAddress: req.ip || req.connection.remoteAddress,
-    userAgent: req.headers['user-agent'],
-  });
+  try {
+    return await createActivityLog({
+      action: success ? 'USER_LOGIN' : 'LOGIN_FAILED',
+      performedBy: userId,
+      status: success ? 'success' : 'failed',
+      errorMessage,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    });
+  } catch (error) {
+    console.error('Error logging login activity:', error);
+    return null;
+  }
 };
 
 /**
@@ -105,13 +110,18 @@ export const logLogin = async (userId, req, success = true, errorMessage = null)
  * @param {Object} req - Request object
  */
 export const logLogout = async (userId, req) => {
-  return await createActivityLog({
-    action: 'USER_LOGOUT',
-    performedBy: userId,
-    status: 'success',
-    ipAddress: req.ip || req.connection.remoteAddress,
-    userAgent: req.headers['user-agent'],
-  });
+  try {
+    return await createActivityLog({
+      action: 'USER_LOGOUT',
+      performedBy: userId,
+      status: 'success',
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.headers['user-agent'],
+    });
+  } catch (error) {
+    console.error('Error logging logout activity:', error);
+    return null;
+  }
 };
 
 /**

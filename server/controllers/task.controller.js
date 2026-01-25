@@ -130,7 +130,7 @@ export const getTaskById = async (req, res) => {
 // @access  Private (Users can create own tasks, Managers can assign to others/teams)
 export const createTask = async (req, res) => {
   try {
-    const { title, description, status, priority, startDate, dueDate, tags, assignedTo, assignedToTeam } = req.body;
+    const { title, description, status, priority, startDate, dueDate, tags, assignedTo, assignedToTeam, workspace } = req.body;
     
     let taskData = {
       title,
@@ -142,6 +142,11 @@ export const createTask = async (req, res) => {
       tags,
       createdBy: req.user.id,
     };
+
+    // Add workspace if provided
+    if (workspace) {
+      taskData.workspace = workspace;
+    }
 
     // Determine assignment type
     if (req.user.role === 'user') {
@@ -365,18 +370,58 @@ export const searchTasks = async (req, res) => {
       status,      // Filter by status
       startDate,   // Date range start
       endDate,     // Date range end
+      workspace,   // Workspace filter
       page = 1,    // Pagination
       limit = 20,  // Results per page
       sortBy = 'createdAt', // Sort field
       sortOrder = 'desc'    // Sort order
     } = req.query;
 
-    // Build base query - user can only search their own tasks
-    // Admin can search all tasks (check if user role is admin)
+    // Build base query based on user role
     let baseQuery = {};
     
-    if (req.user.role !== 'admin') {
-      baseQuery.assignedTo = req.user.id;
+    // Role-based query logic
+    if (req.user.role === 'user') {
+      // Users: can see tasks assigned to them OR tasks in teams they're part of OR tasks they created
+      const userTeams = await Team.find({ members: req.user.id, isActive: true }).select('_id');
+      const teamIds = userTeams.map(team => team._id);
+      
+      baseQuery.$or = [
+        { assignedTo: req.user.id },
+        { assignedToTeam: { $in: teamIds } },
+        { createdBy: req.user.id, assignmentType: 'self' }
+      ];
+    }
+    // Managers and admins can see all tasks - no restriction needed
+
+    // Workspace filter
+    if (workspace) {
+      if (workspace === 'none') {
+        // Show only tasks without workspace (common tasks)
+        // Need to handle this with $and to combine with user query
+        const workspaceCondition = {
+          $or: [
+            { workspace: null },
+            { workspace: { $exists: false } }
+          ]
+        };
+        
+        if (baseQuery.$or) {
+          // If we have user restrictions, combine them with workspace filter
+          baseQuery = {
+            $and: [
+              { $or: baseQuery.$or },
+              workspaceCondition
+            ]
+          };
+        } else {
+          // For managers/admins, just apply workspace filter
+          baseQuery = workspaceCondition;
+        }
+      } else {
+        // Show tasks from specific workspace
+        baseQuery.workspace = workspace;
+      }
     }
 
     // Text search using MongoDB text index
