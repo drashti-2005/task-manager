@@ -538,11 +538,11 @@ function TaskManagement() {
     const taskIds = tasks.map(t => t._id);
 
     return (
-      <div className="flex-1 min-w-[300px]">
-        <div className={`${colorClass} rounded-t-lg p-3 border-2 border-b-0`}>
-          <h3 className="font-bold text-white text-center flex items-center justify-center gap-2">
+      <div className="flex-1 min-w-[280px] sm:min-w-[300px]">
+        <div className={`${colorClass} rounded-t-lg p-2 sm:p-3 border-2 border-b-0`}>
+          <h3 className="font-bold text-white text-center flex items-center justify-center gap-2 text-sm sm:text-base">
             {title}
-            <span className="bg-white/30 px-2 py-0.5 rounded-full text-sm">
+            <span className="bg-white/30 px-2 py-0.5 rounded-full text-xs sm:text-sm">
               {tasks.length}
             </span>
           </h3>
@@ -550,7 +550,7 @@ function TaskManagement() {
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           <div 
             id={status}
-            className="bg-gray-50 rounded-b-lg p-4 min-h-[500px] border-2 border-t-0 space-y-3"
+            className="bg-gray-50 rounded-b-lg p-3 sm:p-4 min-h-[400px] sm:min-h-[500px] border-2 border-t-0 space-y-2 sm:space-y-3"
           >
             {tasks.map(task => (
               <TaskCard key={task._id} task={task} />
@@ -575,60 +575,62 @@ function TaskManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-3">
-          <ListTodo className="h-8 w-8 text-purple-500" />
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-2 sm:gap-3">
+          <ListTodo className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
           {isUser ? 'My Tasks' : 'Task Management'}
         </h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {/* View Toggle */}
           <div className="flex bg-gray-200 rounded-lg p-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
+              className={`px-2 sm:px-4 py-2 rounded-md font-semibold transition flex items-center gap-1 sm:gap-2 text-sm ${
                 viewMode === 'list'
                   ? 'bg-white text-purple-600 shadow'
                   : 'text-gray-600 hover:text-purple-600'
               }`}
             >
               <List className="h-4 w-4" />
-              List
+              <span className="hidden sm:inline">List</span>
             </button>
             <button
               onClick={() => setViewMode('board')}
-              className={`px-4 py-2 rounded-md font-semibold transition flex items-center gap-2 ${
+              className={`px-2 sm:px-4 py-2 rounded-md font-semibold transition flex items-center gap-1 sm:gap-2 text-sm ${
                 viewMode === 'board'
                   ? 'bg-white text-purple-600 shadow'
                   : 'text-gray-600 hover:text-purple-600'
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
-              Board
+              <span className="hidden sm:inline">Board</span>
             </button>
           </div>
           
           <button
             onClick={() => setShowWorkspaceModal(true)}
-            className="bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg font-semibold transition duration-300 shadow flex items-center gap-2"
+            className="bg-gradient-to-r from-fuchsia-500 to-purple-500 hover:from-fuchsia-600 hover:to-purple-600 text-white px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg font-semibold transition duration-300 shadow flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none justify-center"
           >
-            <FolderPlus className="h-5 w-5" />
-            Workspace
+            <FolderPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            <span className="hidden sm:inline">Workspace</span>
+            <span className="sm:hidden">WS</span>
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+            className="bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 hover:from-purple-600 hover:via-blue-600 hover:to-teal-600 text-white px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-lg font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none justify-center"
           >
-            <Plus className="h-5 w-5" />
-            New Task
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            <span className="hidden sm:inline">New Task</span>
+            <span className="sm:hidden">Task</span>
           </button>
         </div>
       </div>
       {/* Workspace Creation Modal */}
       {showWorkspaceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs border-2 border-purple-200">
-            <h2 className="text-lg font-bold mb-2 bg-gradient-to-r from-fuchsia-500 to-purple-500 bg-clip-text text-transparent">Create Workspace</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+          <div className="bg-white rounded-lg shadow-xl p-3 sm:p-4 w-full max-w-xs border-2 border-purple-200">
+            <h2 className="text-base sm:text-lg font-bold mb-2 bg-gradient-to-r from-fuchsia-500 to-purple-500 bg-clip-text text-transparent">Create Workspace</h2>
             <form onSubmit={handleCreateWorkspace}>
               <input
                 type="text"
@@ -636,21 +638,21 @@ function TaskManagement() {
                 value={workspaceName}
                 onChange={e => setWorkspaceName(e.target.value)}
                 required
-                className="w-full mb-2 p-2 border border-purple-200 rounded"
+                className="w-full mb-2 p-2 border border-purple-200 rounded text-sm"
               />
-              {workspaceError && <div className="text-red-500 mb-2">{workspaceError}</div>}
+              {workspaceError && <div className="text-red-500 mb-2 text-xs">{workspaceError}</div>}
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowWorkspaceModal(false)}
-                  className="px-3 py-1 rounded border border-purple-200 text-sm"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded border border-purple-200 text-xs sm:text-sm"
                   disabled={workspaceLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white px-3 py-1 rounded font-semibold text-sm"
+                  className="bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded font-semibold text-xs sm:text-sm"
                   disabled={workspaceLoading}
                 >
                   {workspaceLoading ? 'Creating...' : 'Create'}
@@ -663,12 +665,12 @@ function TaskManagement() {
 
       {/* Workspace Folders Section */}
       {workspaces.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-100">
-          <h2 className="text-lg font-bold mb-4 text-purple-700 flex items-center gap-2">
-            <Folder className="h-5 w-5" />
+        <div className="bg-white rounded-xl shadow-xl p-3 sm:p-4 md:p-6 border-2 border-purple-100">
+          <h2 className="text-sm sm:text-base md:text-lg font-bold mb-2 sm:mb-3 md:mb-4 text-purple-700 flex items-center gap-1.5 sm:gap-2">
+            <Folder className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
             Workspaces
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
             {/* Common Area Drop Zone */}
             <div
               onDragOver={(e) => handleWorkspaceDragOver(e, null)}
@@ -821,39 +823,39 @@ function TaskManagement() {
 
       {/* Search and Filter Section */}
       <div
-        className="bg-white rounded-2xl shadow-xl p-6 border-2 border-purple-100"
+        className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 border-2 border-purple-100"
       >
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Search Bar */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-400" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-purple-400" />
               <input
                 type="text"
-                placeholder="Search tasks by title, description, or tags..."
+                placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border-2 border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50 transition-all duration-200"
+                className="w-full pl-10 sm:pl-12 pr-4 py-2 sm:py-3 border-2 border-purple-200 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-purple-50/50 transition-all duration-200 text-sm sm:text-base"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg flex items-center gap-2 ${
+              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold transition duration-300 shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base ${
                 showFilters 
                   ? 'bg-gradient-to-r from-purple-500 via-blue-500 to-teal-500 text-white' 
                   : 'bg-gradient-to-r from-purple-100 via-blue-100 to-teal-100 text-purple-700 hover:from-purple-200 hover:via-blue-200 hover:to-teal-200'
               }`}
             >
-              <Filter className="h-5 w-5" />
-              Filters
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Filters</span>
             </button>
             {hasActiveFilters && (
               <button
                 onClick={handleClearFilters}
-                className="px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-red-100 to-red-200 text-red-700 hover:from-red-200 hover:to-red-300 transition duration-300 shadow-lg flex items-center gap-2"
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold bg-gradient-to-r from-red-100 to-red-200 text-red-700 hover:from-red-200 hover:to-red-300 transition duration-300 shadow-lg flex items-center justify-center gap-2 text-sm sm:text-base"
               >
-                <X className="h-5 w-5" />
-                Clear
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Clear</span>
               </button>
             )}
           </div>
@@ -861,7 +863,7 @@ function TaskManagement() {
           {/* Filter Panel */}
           {showFilters && (
             <div
-              className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t-2 border-purple-100"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t-2 border-purple-100"
             >
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -928,7 +930,7 @@ function TaskManagement() {
       {/* Tasks View - Board or List */}
       {viewMode === 'board' ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4">
             <KanbanColumn
               status="pending"
               title="📋 Pending"
@@ -950,8 +952,9 @@ function TaskManagement() {
           </div>
         </DndContext>
       ) : (
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-purple-100">
-          <table className="min-w-full divide-y divide-purple-100">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden border-2 border-purple-100">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-purple-100">
             <thead className="bg-gradient-to-r from-purple-100 via-blue-100 to-teal-100">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
@@ -1084,6 +1087,7 @@ function TaskManagement() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
       {/* Tasks Table */}

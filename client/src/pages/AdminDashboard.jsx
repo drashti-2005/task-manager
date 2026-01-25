@@ -163,41 +163,46 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen p-0">
+      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4"
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
               Admin Dashboard
             </h1>
-            <p className="text-gray-600 mt-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              {new Date().toLocaleDateString('en-US', { 
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1.5 sm:mt-2 flex items-center gap-1.5 sm:gap-2">
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">
+                {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
               })}
+              </span>
+              <span className="sm:hidden">
+                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
             </p>
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={fetchDashboardData}
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all text-xs sm:text-sm md:text-base w-full sm:w-auto"
           >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-4 h-4 sm:w-4.5 sm:h-4.5 md:w-5 md:h-5 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </motion.button>
         </motion.div>
 
         {/* Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           {statCards.map((card, index) => {
             const Icon = card.icon;
             const cardBgs = [
@@ -215,31 +220,31 @@ function AdminDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className={`${cardBgs[index]} rounded-2xl shadow-lg p-6 border hover:shadow-xl transition-all`}
+                className={`${cardBgs[index]} rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-5 lg:p-6 border hover:shadow-xl transition-all`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 mb-1">
+                    <p className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-600 mb-0.5 sm:mb-1">
                       {card.title}
                     </p>
                     <motion.h3
                       key={card.value}
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-4xl font-bold text-gray-900 mb-2"
+                      className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-1 sm:mb-1.5 md:mb-2"
                     >
                       {card.value}
                     </motion.h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">
                       {card.subValue}
                     </p>
                   </div>
-                  <div className={`${card.bgColor} p-4 rounded-xl`}>
-                    <Icon className={`w-8 h-8 ${card.iconColor}`} />
+                  <div className={`${card.bgColor} p-2 sm:p-2.5 md:p-3 lg:p-4 rounded-lg sm:rounded-xl`}>
+                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 ${card.iconColor}`} />
                   </div>
                 </div>
-                <div className="mt-4">
-                  <div className={`h-2 bg-gradient-to-r ${card.color} rounded-full`} />
+                <div className="mt-2 sm:mt-3 md:mt-4">
+                  <div className={`h-1.5 sm:h-2 bg-gradient-to-r ${card.color} rounded-full`} />
                 </div>
               </motion.div>
             );
@@ -251,25 +256,25 @@ function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-2xl shadow-lg p-6"
+          className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-5 lg:p-6"
         >
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <Activity className="w-6 h-6 mr-2 text-blue-600" />
+          <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-5 lg:mb-6 flex items-center">
+            <Activity className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1.5 sm:mr-2 text-blue-600" />
             System Health
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             {healthMetrics.map((metric) => {
               const Icon = metric.icon;
               return (
-                <div key={metric.title} className="text-center bg-white rounded-xl p-4 border border-gray-100">
-                  <Icon className={`w-8 h-8 mx-auto mb-2 ${metric.color}`} />
-                  <h4 className="text-2xl font-bold text-gray-900 mb-1">
+                <div key={metric.title} className="text-center bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 border border-gray-100">
+                  <Icon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 mx-auto mb-1 sm:mb-1.5 md:mb-2 ${metric.color}`} />
+                  <h4 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-1">
                     {metric.value}
                   </h4>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
+                  <p className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-600 mb-0.5 sm:mb-1">
                     {metric.title}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500">
                     {metric.subValue}
                   </p>
                 </div>

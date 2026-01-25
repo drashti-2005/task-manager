@@ -105,10 +105,10 @@ function Teams() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
-          <Users className="h-8 w-8 text-blue-500" />
+    <div className="space-y-3 sm:space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2">
+          <Users className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-500" />
           Teams
         </h1>
         {hasManagerAccess && (
@@ -118,58 +118,59 @@ function Teams() {
               setFormData({ name: '', description: '', members: [] });
               setShowModal(true);
             }}
-            className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+            className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 text-white px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-2.5 rounded-lg font-semibold transition duration-300 shadow-lg hover:shadow-xl flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-center text-xs sm:text-sm md:text-base"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5" />
             Create Team
           </button>
         )}
       </div>
 
       {/* Teams Table */}
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-blue-100">
-        <table className="min-w-full divide-y divide-blue-100">
-          <thead className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                Team Name
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-indigo-700 uppercase tracking-wider">
-                Description
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-purple-700 uppercase tracking-wider">
-                Members
-              </th>
-              {hasManagerAccess && (
-                <th className="px-6 py-4 text-left text-xs font-bold text-blue-700 uppercase tracking-wider">
-                  Actions
+      <div className="bg-white rounded-xl shadow-xl overflow-hidden border-2 border-blue-100">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-blue-100">
+            <thead className="bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100">
+              <tr>
+                <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-bold text-blue-700 uppercase tracking-wider">
+                  Team Name
                 </th>
-              )}
-            </tr>
-          </thead>
+                <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-bold text-indigo-700 uppercase tracking-wider hidden md:table-cell">
+                  Description
+                </th>
+                <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-bold text-purple-700 uppercase tracking-wider">
+                  Members
+                </th>
+                {hasManagerAccess && (
+                  <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 text-left text-[10px] sm:text-xs font-bold text-blue-700 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
           <tbody className="bg-white divide-y divide-blue-50">
             {teams.length === 0 ? (
               <tr>
-                <td colSpan={hasManagerAccess ? "4" : "3"} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={hasManagerAccess ? "4" : "3"} className="px-4 sm:px-6 py-8 sm:py-12 text-center text-gray-500">
                   <div className="flex flex-col items-center gap-2">
-                    <Users className="h-12 w-12 text-blue-300" />
-                    <p>No teams found. Create your first team!</p>
+                    <Users className="h-10 w-10 sm:h-12 sm:w-12 text-blue-300" />
+                    <p className="text-sm sm:text-base">No teams found. Create your first team!</p>
                   </div>
                 </td>
               </tr>
             ) : (
               teams.map(team => (
                 <tr key={team._id} className="hover:bg-blue-50 hover:shadow-md transition-all duration-200">
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm font-semibold text-gray-800">{team.name}</span>
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                      <span className="text-xs sm:text-sm font-semibold text-gray-800">{team.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-600">{team.description || '-'}</div>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 hidden md:table-cell">
+                    <div className="text-xs sm:text-sm text-gray-600">{team.description || '-'}</div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-semibold text-gray-700">
                         {team.members?.length || 0} member{team.members?.length !== 1 ? 's' : ''}
@@ -192,18 +193,18 @@ function Teams() {
                     </div>
                   </td>
                   {hasManagerAccess && (
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
+                    <td className="px-4 sm:px-6 py-3 sm:py-4">
+                      <div className="flex gap-1 sm:gap-2">
                         <button
                           onClick={() => handleEdit(team)}
-                          className="text-blue-600 hover:text-blue-800 p-2 rounded hover:bg-blue-50 transition"
+                          className="text-blue-600 hover:text-blue-800 p-1.5 sm:p-2 rounded hover:bg-blue-50 transition"
                           title="Edit team"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(team._id)}
-                          className="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition"
+                          className="text-red-600 hover:text-red-800 p-1.5 sm:p-2 rounded hover:bg-red-50 transition"
                           title="Delete team"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -216,6 +217,7 @@ function Teams() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Team Dialog */}

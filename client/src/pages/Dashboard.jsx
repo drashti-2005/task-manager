@@ -122,26 +122,31 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen p-0">
+      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              Welcome , {user?.name}! 👋
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              Welcome, {user?.name}! 👋
             </h1>
-            <p className="text-gray-600 mt-2 flex items-center gap-2">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1.5 sm:mt-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              <span className="hidden sm:inline">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </span>
+              <span className="sm:hidden">
+                {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
             </p>
           </div>
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
             const cardBgs = [
@@ -157,22 +162,22 @@ function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                className={`${cardBgs[index]} rounded-2xl shadow-lg p-6 border hover:shadow-xl transition-all`}
+                className={`${cardBgs[index]} rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-5 lg:p-6 border hover:shadow-xl transition-all`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-600">{stat.title}</p>
                     <motion.p
                       key={stat.value}
                       initial={{ scale: 0.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="text-4xl font-bold mt-2 text-gray-900"
+                      className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mt-1 sm:mt-1.5 md:mt-2 text-gray-900"
                     >
                       {stat.value}
                     </motion.p>
                   </div>
-                  <div className={`${stat.bgColor} p-4 rounded-xl`}>
-                    <Icon className={`w-8 h-8 ${stat.textColor}`} />
+                  <div className={`${stat.bgColor} p-2 sm:p-2.5 md:p-3 lg:p-4 rounded-lg sm:rounded-xl`}>
+                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 ${stat.textColor}`} />
                   </div>
                 </div>
                 <div className="mt-4">
@@ -189,26 +194,26 @@ function Dashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border border-green-100"
+            className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-6 border border-green-100"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-              <h2 className="text-xl font-bold text-gray-900">Your Progress</h2>
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-blue-600" />
+              <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900">Your Progress</h2>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-xs sm:text-sm mb-1.5 sm:mb-2">
                   <span className="text-gray-600">Overall Completion</span>
                   <span className="font-semibold text-gray-900">
                     {Math.round((stats.completed / stats.total) * 100)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-2 sm:h-2.5 md:h-3">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${(stats.completed / stats.total) * 100}%` }}
                     transition={{ duration: 1, ease: "easeOut" }}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full"
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 sm:h-2.5 md:h-3 rounded-full"
                   />
                 </div>
               </div>
@@ -221,15 +226,15 @@ function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg border border-purple-100"
+          className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl sm:rounded-2xl shadow-lg border border-purple-100"
         >
-          <div className="px-6 py-4 border-b border-purple-100 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-gray-900">Recent Tasks</h2>
-            <Link to="/tasks" className="text-blue-600 hover:text-blue-700 font-semibold text-sm">
+          <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-purple-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h2 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900">Recent Tasks</h2>
+            <Link to="/tasks" className="text-blue-600 hover:text-blue-700 font-semibold text-xs sm:text-sm whitespace-nowrap">
               View All →
             </Link>
           </div>
-          <div className="p-6">
+          <div className="p-3 sm:p-4 md:p-6">
             {recentTasks.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -254,11 +259,11 @@ function Dashboard() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     whileHover={{ scale: 1.02, boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-100 hover:border-blue-200 transition-all cursor-pointer"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-100 hover:border-blue-200 transition-all cursor-pointer gap-3 sm:gap-4"
                   >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
-                      <p className="text-sm text-gray-500 line-clamp-1">{task.description}</p>
+                    <div className="flex-1 w-full sm:w-auto">
+                      <h3 className="font-semibold text-sm md:text-base text-gray-900 mb-1">{task.title}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">{task.description}</p>
                       {task.dueDate && (
                         <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
@@ -266,7 +271,7 @@ function Dashboard() {
                         </p>
                       )}
                     </div>
-                    <span className={`px-4 py-2 rounded-lg text-xs font-bold border-2 ${getStatusColor(task.status)} whitespace-nowrap ml-4`}>
+                    <span className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold border-2 ${getStatusColor(task.status)} whitespace-nowrap self-end sm:self-auto`}>
                       {task.status.replace('-', ' ').toUpperCase()}
                     </span>
                   </motion.div>

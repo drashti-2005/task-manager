@@ -84,7 +84,7 @@ function TaskDialog({
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           closeModal();
@@ -92,10 +92,10 @@ function TaskDialog({
       }}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full"
+        className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-5 md:p-6 max-w-md w-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
           {editingTask ? 'Edit Task' : 'New Task'}
         </h2>
         

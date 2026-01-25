@@ -12,8 +12,8 @@ function Layout() {
       {/* Navigation */}
       <Navbar />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 relative z-10">
+      {/* Main Content - Responsive padding */}
+      <main className="w-full max-w-7xl mx-auto py-2 px-3 sm:py-4 sm:px-4 md:py-6 md:px-6 lg:px-8 relative z-10">
         <Outlet />
       </main>
     </div>
